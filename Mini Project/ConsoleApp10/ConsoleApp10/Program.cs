@@ -16,6 +16,8 @@ var returnBookService = new ReturnBookService(
     bookRepository,
     lateFeeService);
 
+var paymentService = new PaymentService();
+
 var menu = new LibraryMenu(
     createBookService,
     getAllBooksService,
@@ -23,7 +25,8 @@ var menu = new LibraryMenu(
     updateBookService,
     deleteBookService,
     borrowBookService,
-    returnBookService
+    returnBookService,
+    paymentService
 );
 
-menu.Show();
+await menu.Show();

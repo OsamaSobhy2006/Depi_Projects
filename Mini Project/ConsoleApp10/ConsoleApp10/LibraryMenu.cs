@@ -12,6 +12,7 @@ public class LibraryMenu
     private readonly DeleteBookService _deleteBookService;
     private readonly BorrowBookService _borrowBookService;
     private readonly ReturnBookService _returnBookService;
+    private readonly PaymentService _paymentService;
 
     public LibraryMenu(
         CreateBookService createBookService,
@@ -20,7 +21,8 @@ public class LibraryMenu
         UpdateBookService updateBookService,
         DeleteBookService deleteBookService,
         BorrowBookService borrowBookService,
-        ReturnBookService returnBookService)
+        ReturnBookService returnBookService,
+        PaymentService paymentService)
     {
         _createBookService = createBookService;
         _getAllBooksService = getAllBooksService;
@@ -29,9 +31,10 @@ public class LibraryMenu
         _deleteBookService = deleteBookService;
         _borrowBookService = borrowBookService;
         _returnBookService = returnBookService;
+        _paymentService = paymentService;
     }
 
-    public void Show()
+    public async Task Show()
     {
         bool isRunning = true;
 
@@ -84,7 +87,7 @@ public class LibraryMenu
                     break;
 
                 case "7":
-                    ReturnBook();
+                    await ReturnBook();
                     break;
 
                 case "8":
@@ -231,7 +234,7 @@ public class LibraryMenu
 
         _borrowBookService.BorrowBook(id, duration);
     }
-    private void ReturnBook()
+    private async Task ReturnBook()
     {
         Console.Write("Enter Book Id: ");
         int bookId = int.Parse(Console.ReadLine()!);
@@ -256,6 +259,41 @@ public class LibraryMenu
                 Console.WriteLine($"Book is {result.LateDays} day(s) late.");
                 Console.WriteLine($"Late fee: {result.Fee} EGP");
                 Console.WriteLine("Payment is required before returning the book.");
+
+                Console.WriteLine();
+                Console.WriteLine("Creating Stripe payment session...");
+
+                var paymentSession = await _paymentService.CreatePaymentSessionAsync(result.Fee, bookId);
+
+                Console.WriteLine("Opening Stripe payment page...");
+
+                _paymentService.OpenPaymentPage(paymentSession.Url);
+
+                Console.WriteLine();
+                Console.WriteLine("Complete the payment in your browser.");
+                Console.WriteLine("Press ENTER after completing the payment.");
+
+                Console.ReadLine();
+
+                bool paymentSuccessful = await _paymentService.IsPaymentSuccessfulAsync(paymentSession.SessionId);
+
+                if (!paymentSuccessful)
+                {
+                    Console.WriteLine("Payment was not completed.");
+                    break;
+                }
+
+                bool returned = _returnBookService.CompleteReturn(bookId);
+
+                if (returned)
+                {
+                    Console.WriteLine("Payment successful.");
+                    Console.WriteLine("Book returned successfully.");
+                }
+                else
+                    Console.WriteLine("Payment succeeded, but the book could not be returned.");
+                
+
                 break;
         }
     }

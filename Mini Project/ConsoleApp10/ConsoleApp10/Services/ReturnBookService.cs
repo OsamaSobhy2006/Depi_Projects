@@ -46,4 +46,21 @@ public class ReturnBookService
 
         return (ReturnBookResult.Success, 0, 0);
     }
+    public bool CompleteReturn(int bookId)
+    {
+        var book = _bookRepository.GetById(bookId);
+
+        if (book == null)
+            return false;
+
+        if (!book.IsBorrowed)
+            return false;
+
+        book.IsBorrowed = false;
+        book.DueDate = null;
+
+        _bookRepository.Update(book);
+
+        return true;
+    }
 }
