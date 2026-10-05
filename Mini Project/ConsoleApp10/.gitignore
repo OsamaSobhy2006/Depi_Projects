@@ -1,0 +1,17 @@
+.vs/
+**/bin/
+**/obj/
+.vscode/
+.idea/
+
+*.user
+*.suo
+*.csproj.user
+*.rsuser
+
+TestResults/
+coverage/
+*.log
+
+.DS_Store
+Thumbs.db
