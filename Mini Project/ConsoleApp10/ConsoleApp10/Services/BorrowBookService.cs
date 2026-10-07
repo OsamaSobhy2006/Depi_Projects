@@ -35,7 +35,7 @@ public class BorrowBookService
         }
 
         book.IsBorrowed = true;
-        book.DueDate = DateTime.Now.AddDays(-duration);
+        book.DueDate = DateTime.Now.AddDays(duration);
 
         _bookRepository.Update(book);
 

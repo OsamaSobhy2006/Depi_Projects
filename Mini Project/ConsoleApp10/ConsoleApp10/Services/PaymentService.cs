@@ -26,7 +26,7 @@ public class PaymentService
         {
             Mode = "payment",
 
-            SuccessUrl = "https://example.com/payment-success",
+            SuccessUrl = "https://osamasobhy2006.github.io/Success-Payment/",
             CancelUrl = "https://example.com/payment-cancelled",
 
             LineItems = new List<SessionLineItemOptions>
@@ -48,7 +48,7 @@ public class PaymentService
                     }
                 }
             }
-        };
+        }; ;
 
         var session = await _sessionService.CreateAsync(options);
 
