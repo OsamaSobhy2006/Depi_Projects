@@ -4,5 +4,6 @@
     <Project Path="src/CampusOne.Application/CampusOne.Application.csproj" />
     <Project Path="src/CampusOne.Domain/CampusOne.Domain.csproj" />
     <Project Path="src/CampusOne.Infrastructure/CampusOne.Infrastructure.csproj" />
+    <Project Path="src/CampusOne.Services/CampusOne.Services.csproj" />
   </Folder>
 </Solution>
