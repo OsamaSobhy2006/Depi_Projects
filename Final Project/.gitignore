@@ -1,0 +1,42 @@
+﻿# Build output
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider and other IDEs
+.idea/
+*.sln.iml
+
+# Logs
+*.log
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Local app settings that may contain secrets
+appsettings.Local.json
+appsettings.*.Local.json
+
+# Certificates and private keys
+*.pfx
+*.p12
+*.key
+
+# Test and coverage output
+TestResults/
+coverage/
+coverage.*
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CampusOne.API/CampusOne.API.csproj" />
+    <Project Path="src/CampusOne.Application/CampusOne.Application.csproj" />
+    <Project Path="src/CampusOne.Domain/CampusOne.Domain.csproj" />
+    <Project Path="src/CampusOne.Infrastructure/CampusOne.Infrastructure.csproj" />
+  </Folder>
+</Solution>
