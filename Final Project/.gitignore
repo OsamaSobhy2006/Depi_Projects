@@ -24,6 +24,8 @@
 # Local app settings that may contain secrets
 appsettings.Local.json
 appsettings.*.Local.json
+**/appsettings.Development.json
+**/appsettings.*.Development.json
 
 # Certificates and private keys
 *.pfx
