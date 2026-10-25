@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -21,10 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CampusOne.Infrastructure\CampusOne.Infrastructure.csproj" />
     <ProjectReference Include="..\CampusOne.Application\CampusOne.Application.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Controllers\" />
+    <ProjectReference Include="..\CampusOne.Services\CampusOne.Services.csproj" />
   </ItemGroup>
 
 </Project>
