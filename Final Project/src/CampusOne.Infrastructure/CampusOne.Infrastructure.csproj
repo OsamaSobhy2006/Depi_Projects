@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CampusOne.Domain\CampusOne.Domain.csproj" />
+    <ProjectReference Include="..\CampusOne.Application\CampusOne.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -11,6 +12,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.13" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.14" />
   </ItemGroup>
 
   <PropertyGroup>

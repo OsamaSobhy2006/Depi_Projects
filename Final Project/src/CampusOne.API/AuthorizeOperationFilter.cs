@@ -13,6 +13,10 @@ public class AuthorizeOperationFilter : IOperationFilter
         var hasAllowAnonymous =
             context.MethodInfo
                 .GetCustomAttributes(typeof(AllowAnonymousAttribute), true)
+                .Length > 0
+            ||
+            context.MethodInfo.DeclaringType?
+                .GetCustomAttributes(typeof(AllowAnonymousAttribute), true)
                 .Length > 0;
 
         if (hasAllowAnonymous)
@@ -20,6 +24,10 @@ public class AuthorizeOperationFilter : IOperationFilter
 
         var hasAuthorize =
             context.MethodInfo
+                .GetCustomAttributes(typeof(AuthorizeAttribute), true)
+                .Length > 0
+            ||
+            context.MethodInfo.DeclaringType?
                 .GetCustomAttributes(typeof(AuthorizeAttribute), true)
                 .Length > 0;
 

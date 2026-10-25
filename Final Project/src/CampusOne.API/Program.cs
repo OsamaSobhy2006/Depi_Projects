@@ -7,12 +7,31 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Text;
+using CampusOne.Application.Interfaces.AI;
+using CampusOne.Infrastructure.AI;
+using CampusOne.Services.AI;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Register services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHttpClient<EmbeddingService>();
+builder.Services.AddHttpClient<LlmService>();
+builder.Services.AddSingleton<EmbeddingStore>();
+builder.Services.AddSingleton<SimilarityService>();
+builder.Services.AddScoped<IRagService, RagService>();
+builder.Services.AddScoped<IAiOrchestrator, AiOrchestrator>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddSwaggerGen(options =>
 {
@@ -100,6 +119,8 @@ if (app.Environment.IsDevelopment())
 
 // 6. Configure HTTP pipeline
 app.UseHttpsRedirection();
+
+app.UseCors("FrontendPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
