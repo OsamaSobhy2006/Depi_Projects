@@ -6,6 +6,7 @@ namespace CampusOne.Infrastructure.AI;
 public class RagService : IRagService
 {
     private const double MinSimilarity = 0.30;
+    private const int TopK = 15;
 
     private readonly EmbeddingService _embeddingService;
     private readonly EmbeddingStore _store;
@@ -28,9 +29,15 @@ public class RagService : IRagService
         string question,
         CancellationToken cancellationToken = default)
     {
-        var questionEmbedding = await _embeddingService.GenerateEmbeddingAsync(question, cancellationToken);
+        var questionEmbedding =
+            await _embeddingService.GenerateEmbeddingAsync(
+                question,
+                cancellationToken);
 
-        var results = _similarityService.Search(questionEmbedding, _store.Chunks, topK: 5);
+        var results = _similarityService.Search(
+            questionEmbedding,
+            _store.Chunks,
+            topK: TopK);
 
         var best = results.FirstOrDefault();
 
@@ -44,12 +51,18 @@ public class RagService : IRagService
             };
         }
 
-        var context = string.Join("\n\n---\n\n",
-            results
-                .Where(result => result.Score >= MinSimilarity)
-                .Select(result => result.Chunk.Content));
+        var relevantResults = results
+            .Where(result => result.Score >= MinSimilarity)
+            .ToList();
 
-        var answer = await _llmService.GenerateAnswerAsync(question, context, cancellationToken);
+        var context = string.Join(
+            "\n\n---\n\n",
+            relevantResults.Select(result => result.Chunk.Content));
+
+        var answer = await _llmService.GenerateAnswerAsync(
+            question,
+            context,
+            cancellationToken);
 
         return new AiChatResponse
         {

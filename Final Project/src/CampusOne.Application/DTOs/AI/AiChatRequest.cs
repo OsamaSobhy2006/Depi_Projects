@@ -7,5 +7,8 @@ namespace CampusOne.Application.DTOs.AI
         [Required]
         [MinLength(1)]
         public string Question { get; set; } = string.Empty;
+
+        [Required]
+        public Guid ConversationId { get; set; }
     }
 }
