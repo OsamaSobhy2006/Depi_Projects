@@ -22,6 +22,7 @@ builder.Services.AddSingleton<EmbeddingStore>();
 builder.Services.AddSingleton<SimilarityService>();
 builder.Services.AddScoped<IRagService, RagService>();
 builder.Services.AddScoped<IAiOrchestrator, AiOrchestrator>();
+builder.Services.AddScoped<IAiConversationService, AiConversationService>();
 
 builder.Services.AddCors(options =>
 {

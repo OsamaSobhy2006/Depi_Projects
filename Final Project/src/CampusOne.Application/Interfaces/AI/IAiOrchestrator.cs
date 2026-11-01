@@ -5,6 +5,6 @@ namespace CampusOne.Application.Interfaces.AI
     public interface IAiOrchestrator
     {
         Task<AiChatResponse> AskAsync(
-            AiChatRequest request, CancellationToken cancellationToken = default);
+            AiChatRequest request, string userId ,CancellationToken cancellationToken = default);
     }
 }
