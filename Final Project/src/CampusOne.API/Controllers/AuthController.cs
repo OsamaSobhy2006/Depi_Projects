@@ -48,6 +48,26 @@ namespace CampusOne.API.Controllers
         }
 
         [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if(user is null)
+                return Unauthorized(new {message = "Invalid or Expired Token" });
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return Ok(new
+            {
+                id = user.Id,
+                firstName = user.FirstName,
+                lastName = user.LastName,
+                fullName = user.FirstName + " " + user.LastName,
+                email = user.Email,
+                roles = roles
+            });
+        }
+
+        [Authorize]
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
         {
