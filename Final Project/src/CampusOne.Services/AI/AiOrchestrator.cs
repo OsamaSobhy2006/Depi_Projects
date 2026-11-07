@@ -49,8 +49,6 @@ public class AiOrchestrator : IAiOrchestrator
         var intent = await _intentClassifier.ClassifyAsync(
                     question,
                     cancellationToken);
-        Console.WriteLine($"[AI DEBUG] Question: {question}");
-        Console.WriteLine($"[AI DEBUG] Detected Intent: {intent}");
         var result = await HandleIntentAsync(
                     intent,
                     question,
