@@ -159,22 +159,12 @@ public class LlmService : IAiIntentClassifier
         var documentIntent = DetectUniversityDocumentIntent(question);
 
         if (documentIntent.HasValue)
-        {
-            Console.WriteLine(
-                $"[AI CLASSIFIER] Rule-based intent: {documentIntent.Value}");
-
             return documentIntent.Value;
-        }
 
         var featureIntent = DetectFeatureIntent(question);
 
         if (featureIntent.HasValue)
-        {
-            Console.WriteLine(
-                $"[AI CLASSIFIER] Rule-based intent: {featureIntent.Value}");
-
             return featureIntent.Value;
-        }
 
         const string systemPrompt = """
         You are the intent classifier for CampusOne, a university platform.
@@ -294,15 +284,9 @@ public class LlmService : IAiIntentClassifier
                 intent.ToString(),
                 StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine(
-                    $"[AI CLASSIFIER] LLM intent: {intent}");
-
                 return intent;
             }
         }
-
-        Console.WriteLine(
-            $"[AI CLASSIFIER] Unexpected response: {result}");
 
         return AiIntent.OutOfScope;
     }
