@@ -10,6 +10,8 @@ using System.Text;
 using CampusOne.Application.Interfaces.AI;
 using CampusOne.Infrastructure.AI;
 using CampusOne.Services.AI;
+using CampusOne.Application.Interfaces;
+using CampusOne.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +25,7 @@ builder.Services.AddSingleton<SimilarityService>();
 builder.Services.AddScoped<IRagService, RagService>();
 builder.Services.AddScoped<IAiOrchestrator, AiOrchestrator>();
 builder.Services.AddScoped<IAiConversationService, AiConversationService>();
+builder.Services.AddScoped<IProfilePictureStorage, LocalProfilePictureStorage>();
 
 builder.Services.AddCors(options =>
 {
