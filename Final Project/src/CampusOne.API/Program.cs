@@ -18,11 +18,13 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpClient<EmbeddingService>();
 builder.Services.AddHttpClient<LlmService>();
+builder.Services.AddScoped<IAiIntentClassifier>(sp => sp.GetRequiredService<LlmService>());
 builder.Services.AddSingleton<EmbeddingStore>();
 builder.Services.AddSingleton<SimilarityService>();
 builder.Services.AddScoped<IRagService, RagService>();
 builder.Services.AddScoped<IAiOrchestrator, AiOrchestrator>();
 builder.Services.AddScoped<IAiConversationService, AiConversationService>();
+
 
 builder.Services.AddCors(options =>
 {
