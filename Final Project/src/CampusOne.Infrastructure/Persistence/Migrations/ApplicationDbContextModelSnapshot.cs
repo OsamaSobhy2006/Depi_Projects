@@ -80,6 +80,70 @@ namespace CampusOne.Infrastructure.Persistence.Migrations
                     b.ToTable("AiMessages");
                 });
 
+            modelBuilder.Entity("CampusOne.Domain.Entities.Chat.Conversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UpdatedAt");
+
+                    b.ToTable("Conversations");
+                });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.Chat.ConversationParticipant", b =>
+                {
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("ConversationId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ConversationParticipants");
+                });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.Chat.Message", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(5000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SenderId");
+
+                    b.HasIndex("ConversationId", "CreatedAt");
+
+                    b.ToTable("Messages");
+                });
+
             modelBuilder.Entity("CampusOne.Infrastructure.Identity.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -315,6 +379,40 @@ namespace CampusOne.Infrastructure.Persistence.Migrations
                     b.Navigation("Conversation");
                 });
 
+            modelBuilder.Entity("CampusOne.Domain.Entities.Chat.ConversationParticipant", b =>
+                {
+                    b.HasOne("CampusOne.Domain.Entities.Chat.Conversation", "Conversation")
+                        .WithMany("Participants")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CampusOne.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.Chat.Message", b =>
+                {
+                    b.HasOne("CampusOne.Domain.Entities.Chat.Conversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CampusOne.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -369,6 +467,13 @@ namespace CampusOne.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("CampusOne.Domain.Entities.AI.AiConversation", b =>
                 {
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.Chat.Conversation", b =>
+                {
+                    b.Navigation("Messages");
+
+                    b.Navigation("Participants");
                 });
 #pragma warning restore 612, 618
         }
