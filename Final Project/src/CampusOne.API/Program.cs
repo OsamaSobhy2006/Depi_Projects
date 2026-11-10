@@ -12,6 +12,7 @@ using CampusOne.Infrastructure.AI;
 using CampusOne.Services.AI;
 using CampusOne.Application.Interfaces;
 using CampusOne.Infrastructure.Services;
+using CampusOne.Services.Chat;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,7 @@ builder.Services.AddScoped<IRagService, RagService>();
 builder.Services.AddScoped<IAiOrchestrator, AiOrchestrator>();
 builder.Services.AddScoped<IAiConversationService, AiConversationService>();
 builder.Services.AddScoped<IProfilePictureStorage, LocalProfilePictureStorage>();
+builder.Services.AddScoped<IChatService, ChatService>();
 
 
 builder.Services.AddCors(options =>
