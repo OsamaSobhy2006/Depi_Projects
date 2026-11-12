@@ -1,4 +1,5 @@
 using CampusOne.API;
+using CampusOne.API.Hubs;
 using CampusOne.Infrastructure.Identity;
 using CampusOne.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -19,28 +20,38 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. Register services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddSignalR();
+
 builder.Services.AddHttpClient<EmbeddingService>();
 builder.Services.AddHttpClient<LlmService>();
-builder.Services.AddScoped<IAiIntentClassifier>(sp => sp.GetRequiredService<LlmService>());
+
+builder.Services.AddScoped<IAiIntentClassifier>(
+    sp => sp.GetRequiredService<LlmService>());
+
 builder.Services.AddSingleton<EmbeddingStore>();
 builder.Services.AddSingleton<SimilarityService>();
+
 builder.Services.AddScoped<IRagService, RagService>();
 builder.Services.AddScoped<IAiOrchestrator, AiOrchestrator>();
 builder.Services.AddScoped<IAiConversationService, AiConversationService>();
+
 builder.Services.AddScoped<IProfilePictureStorage, LocalProfilePictureStorage>();
 builder.Services.AddScoped<IChatService, ChatService>();
 
-
+// 2. Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
     {
         policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
+// 3. Configure Swagger
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -52,15 +63,16 @@ builder.Services.AddSwaggerGen(options =>
         In = ParameterLocation.Header,
         Description = "Enter your JWT token."
     });
+
     options.OperationFilter<AuthorizeOperationFilter>();
 });
 
-// 2. Configure SQL Server
+// 4. Configure SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 3. Configure ASP.NET Core Identity
+// 5. Configure ASP.NET Core Identity
 builder.Services
     .AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
@@ -78,7 +90,7 @@ builder.Services
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// 4. Configure JWT Authentication
+// 6. Configure JWT
 var jwtSecret = builder.Configuration["Jwt:SecretKey"]
     ?? throw new InvalidOperationException("Jwt:SecretKey is missing");
 
@@ -114,18 +126,36 @@ builder.Services
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
+
+        // SignalR sends the JWT through the access_token query parameter.
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/hubs/chat"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
     });
 
 var app = builder.Build();
 
-// 5. Configure Swagger in Development
+// 7. Configure Swagger in Development
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// 6. Configure HTTP pipeline
+// 8. Configure HTTP pipeline
 app.UseHttpsRedirection();
 
 app.UseCors("FrontendPolicy");
@@ -134,5 +164,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// 9. Map SignalR Hub
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
