@@ -1,15 +1,17 @@
-﻿
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CampusOne.Domain.Entities;
 using CampusOne.Infrastructure.Persistence;
 using Stripe;
 using Stripe.Checkout;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CampusOne.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("[controller]")]
+    [Authorize]
     public class BorrowController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -17,7 +19,6 @@ namespace CampusOne.Api.Controllers
 
         private const decimal FinePerDay = 10.00m;
         private const int BorrowingDays = 14;
-        private const string TestUserId = "student-123";
 
         public BorrowController(
             ApplicationDbContext context,
@@ -25,6 +26,14 @@ namespace CampusOne.Api.Controllers
         {
             _context = context;
             _configuration = configuration;
+        }
+
+        // دالة لجلب الـ UserId الحقيقي من الـ JWT Token للمستخدم الحالي
+        private string GetCurrentUserId()
+        {
+            return User.FindFirstValue(ClaimTypes.NameIdentifier)
+                   ?? User.FindFirstValue("sub")
+                   ?? string.Empty;
         }
 
         // Calculate fine: 10 EGP for each started overdue day
@@ -46,6 +55,10 @@ namespace CampusOne.Api.Controllers
         [HttpPost("request/{bookId}")]
         public async Task<IActionResult> BorrowBook(int bookId)
         {
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("User is not authenticated.");
+
             var book = await _context.Books.FindAsync(bookId);
 
             if (book == null)
@@ -59,7 +72,7 @@ namespace CampusOne.Api.Controllers
             var request = new BorrowRequest
             {
                 BookId = bookId,
-                UserId = TestUserId,
+                UserId = userId, // استخدام الـ ID الحقيقي للمستخدم الحالي
                 BorrowDate = borrowDate,
                 DueDate = borrowDate.AddDays(BorrowingDays),
                 Status = "Borrowed",
@@ -93,10 +106,14 @@ namespace CampusOne.Api.Controllers
         [HttpGet("status/{bookId}")]
         public async Task<IActionResult> GetBorrowStatus(int bookId)
         {
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("User is not authenticated.");
+
             var request = await _context.BorrowRequests
                 .Where(r =>
                     r.BookId == bookId &&
-                    r.UserId == TestUserId)
+                    r.UserId == userId)
                 .OrderByDescending(r => r.BorrowDate)
                 .ThenByDescending(r => r.Id)
                 .FirstOrDefaultAsync();
@@ -146,13 +163,17 @@ namespace CampusOne.Api.Controllers
             });
         }
 
-        // 3. Get All Borrowed Books for Current Test User
+        // 3. Get All Borrowed Books for Current User
         [HttpGet("my-borrowed-books")]
         public async Task<IActionResult> GetMyBorrowedBooks()
         {
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("User is not authenticated.");
+
             var requests = await _context.BorrowRequests
                 .Include(r => r.Book)
-                .Where(r => r.UserId == TestUserId)
+                .Where(r => r.UserId == userId)
                 .OrderByDescending(r => r.BorrowDate)
                 .ToListAsync();
 
@@ -186,31 +207,18 @@ namespace CampusOne.Api.Controllers
             var result = requests.Select(request => new
             {
                 borrowRequestId = request.Id,
-
                 bookId = request.BookId,
-
                 title = request.Book?.Title ?? "Unknown Book",
-
                 author = request.Book?.Author ?? "Unknown Author",
-
                 cover = request.Book?.Cover ?? "navy",
-
                 description = request.Book?.Description,
-
                 fileUrl = request.Book?.FileUrl,
-
                 borrowDate = request.BorrowDate,
-
                 dueDate = request.DueDate,
-
                 returnDate = request.ReturnDate,
-
                 status = request.Status,
-
                 fineAmount = request.FineAmount,
-
                 isFinePaid = request.IsFinePaid,
-
                 paidAt = request.PaidAt
             });
 
@@ -221,11 +229,15 @@ namespace CampusOne.Api.Controllers
         [HttpPost("return/{borrowRequestId}")]
         public async Task<IActionResult> ReturnBook(int borrowRequestId)
         {
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("User is not authenticated.");
+
             var request = await _context.BorrowRequests
                 .Include(r => r.Book)
                 .FirstOrDefaultAsync(r =>
                     r.Id == borrowRequestId &&
-                    r.UserId == TestUserId);
+                    r.UserId == userId);
 
             if (request == null)
                 return NotFound("Borrow request not found.");
@@ -270,10 +282,14 @@ namespace CampusOne.Api.Controllers
         public async Task<IActionResult> CreateCheckoutSession(
             int borrowRequestId)
         {
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("User is not authenticated.");
+
             var request = await _context.BorrowRequests
                 .FirstOrDefaultAsync(r =>
                     r.Id == borrowRequestId &&
-                    r.UserId == TestUserId);
+                    r.UserId == userId);
 
             if (request == null)
                 return NotFound("Borrow request not found.");
@@ -362,6 +378,7 @@ namespace CampusOne.Api.Controllers
 
         // 6. Stripe Webhook
         [HttpPost("webhook")]
+        [AllowAnonymous]
         public async Task<IActionResult> StripeWebhook()
         {
             var json = await new StreamReader(
