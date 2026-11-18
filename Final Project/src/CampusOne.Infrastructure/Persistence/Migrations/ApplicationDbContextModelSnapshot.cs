@@ -80,6 +80,7 @@ namespace CampusOne.Infrastructure.Persistence.Migrations
                     b.ToTable("AiMessages");
                 });
 
+<<<<<<< Updated upstream
             modelBuilder.Entity("CampusOne.Domain.Entities.Chat.Conversation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -142,6 +143,95 @@ namespace CampusOne.Infrastructure.Persistence.Migrations
                     b.HasIndex("ConversationId", "CreatedAt");
 
                     b.ToTable("Messages");
+=======
+            modelBuilder.Entity("CampusOne.Domain.Entities.Book", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Author")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Cover")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("FileUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Books");
+                });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.BorrowRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("BorrowDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("FineAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsFinePaid")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ReturnDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("StripeCheckoutSessionId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BorrowRequests");
+>>>>>>> Stashed changes
                 });
 
             modelBuilder.Entity("CampusOne.Infrastructure.Identity.ApplicationUser", b =>
@@ -379,17 +469,26 @@ namespace CampusOne.Infrastructure.Persistence.Migrations
                     b.Navigation("Conversation");
                 });
 
+<<<<<<< Updated upstream
             modelBuilder.Entity("CampusOne.Domain.Entities.Chat.ConversationParticipant", b =>
                 {
                     b.HasOne("CampusOne.Domain.Entities.Chat.Conversation", "Conversation")
                         .WithMany("Participants")
                         .HasForeignKey("ConversationId")
+=======
+            modelBuilder.Entity("CampusOne.Domain.Entities.BorrowRequest", b =>
+                {
+                    b.HasOne("CampusOne.Domain.Entities.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+>>>>>>> Stashed changes
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("CampusOne.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+<<<<<<< Updated upstream
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
@@ -411,6 +510,12 @@ namespace CampusOne.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Conversation");
+=======
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+>>>>>>> Stashed changes
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
