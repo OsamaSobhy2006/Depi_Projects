@@ -1,11 +1,6 @@
-<<<<<<< Updated upstream
-﻿using CampusOne.Domain.Entities.AI;
-using CampusOne.Domain.Entities.Chat;
-=======
-﻿
 using CampusOne.Domain.Entities;
 using CampusOne.Domain.Entities.AI;
->>>>>>> Stashed changes
+using CampusOne.Domain.Entities.Chat;
 using CampusOne.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
