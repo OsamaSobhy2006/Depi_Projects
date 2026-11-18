@@ -1,22 +1,33 @@
 using CampusOne.API;
+using CampusOne.Application.Interfaces;
+using CampusOne.Application.Interfaces.AI;
+using CampusOne.Application.Interfaces.UniversityServices;
+using CampusOne.Infrastructure.AI;
 using CampusOne.Infrastructure.Identity;
 using CampusOne.Infrastructure.Persistence;
+using CampusOne.Infrastructure.Repositories.UniversityServices;
+using CampusOne.Infrastructure.Services;
+using CampusOne.Services.AI;
+using CampusOne.Services.UniversityServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Text;
-using CampusOne.Application.Interfaces.AI;
-using CampusOne.Infrastructure.AI;
-using CampusOne.Services.AI;
-using CampusOne.Application.Interfaces;
-using CampusOne.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Register services
 builder.Services.AddControllers();
+
+// University Services Repositories
+builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
+builder.Services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
+builder.Services.AddScoped<ServiceService>();
+builder.Services.AddScoped<ServiceRequestService>();
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpClient<EmbeddingService>();
 builder.Services.AddHttpClient<LlmService>();
@@ -117,10 +128,49 @@ builder.Services
 var app = builder.Build();
 
 // 5. Configure Swagger in Development
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    var userManager = scope.ServiceProvider
+        .GetRequiredService<UserManager<ApplicationUser>>();
+
+    var email = "Eman@gmail.com";
+
+    var user = await userManager.FindByEmailAsync(email);
+
+    if (user == null)
+    {
+        user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            FirstName = "Osama",
+            LastName = "Sobhy",
+            Department = "Computer Science",
+            AcademicYear = "3rd Year",
+            EmailConfirmed = true
+        };
+
+        var result = await userManager.CreateAsync(
+            user,
+            "Osama@123"
+        );
+
+        if (result.Succeeded)
+        {
+            Console.WriteLine("User created successfully.");
+        }
+        else
+        {
+            foreach (var error in result.Errors)
+            {
+                Console.WriteLine(error.Description);
+            }
+        }
+    }
+    else
+    {
+        Console.WriteLine("User already exists.");
+    }
 }
 
 // 6. Configure HTTP pipeline
@@ -130,6 +180,8 @@ app.UseCors("FrontendPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.MapControllers();
 
