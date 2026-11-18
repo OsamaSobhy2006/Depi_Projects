@@ -1,5 +1,11 @@
+<<<<<<< Updated upstream
 ﻿using CampusOne.Domain.Entities.AI;
 using CampusOne.Domain.Entities.Chat;
+=======
+﻿
+using CampusOne.Domain.Entities;
+using CampusOne.Domain.Entities.AI;
+>>>>>>> Stashed changes
 using CampusOne.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -9,10 +15,13 @@ namespace CampusOne.Infrastructure.Persistence;
 
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole, string>
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
     {
     }
 
+    public DbSet<Book> Books => Set<Book>();
+    public DbSet<BorrowRequest> BorrowRequests => Set<BorrowRequest>();
     public DbSet<AiConversation> AiConversations => Set<AiConversation>();
     public DbSet<AiMessage> AiMessages => Set<AiMessage>();
     public DbSet<Conversation> Conversations => Set<Conversation>();
@@ -23,6 +32,56 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     {
         base.OnModelCreating(builder);
 
+        // Book Configuration
+        builder.Entity<Book>(entity =>
+        {
+            entity.HasKey(b => b.Id);
+
+            entity.Property(b => b.Title)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(b => b.Author)
+                .IsRequired()
+                .HasMaxLength(150);
+
+            entity.Property(b => b.Cover)
+                .HasMaxLength(500);
+
+            entity.Property(b => b.Description)
+                .HasMaxLength(1000);
+
+            entity.Property(b => b.FileUrl)
+                .HasMaxLength(2048);
+        });
+
+        // BorrowRequest Configuration
+        builder.Entity<BorrowRequest>(entity =>
+        {
+            entity.HasKey(br => br.Id);
+
+            entity.Property(br => br.UserId)
+                .IsRequired();
+
+            entity.Property(br => br.Status)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(br => br.FineAmount)
+                .HasColumnType("decimal(18,2)");
+
+            entity.HasOne(br => br.Book)
+                .WithMany()
+                .HasForeignKey(br => br.BookId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(br => br.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // AI Conversation Configuration
         builder.Entity<AiConversation>(entity =>
         {
             entity.HasKey(c => c.Id);
@@ -51,10 +110,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(c => c.UserId);
-
             entity.HasIndex(c => c.UpdatedAt);
         });
 
+        // AI Message Configuration
         builder.Entity<AiMessage>(entity =>
         {
             entity.HasKey(m => m.Id);
