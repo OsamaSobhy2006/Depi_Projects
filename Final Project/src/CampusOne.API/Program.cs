@@ -39,10 +39,7 @@ builder.Services.AddScoped<IAiConversationService, AiConversationService>();
 builder.Services.AddScoped<IProfilePictureStorage, LocalProfilePictureStorage>();
 builder.Services.AddScoped<IChatService, ChatService>();
 
-<<<<<<< Updated upstream
-// 2. Configure CORS
-=======
->>>>>>> Stashed changes
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
@@ -149,72 +146,23 @@ builder.Services
 
 var app = builder.Build();
 
-<<<<<<< Updated upstream
+
+
 // 7. Configure Swagger in Development
 if (app.Environment.IsDevelopment())
-=======
-// 5. Configure Seeding / Password Reset in Development
-using (var scope = app.Services.CreateScope())
->>>>>>> Stashed changes
 {
-    var userManager = scope.ServiceProvider
-        .GetRequiredService<UserManager<ApplicationUser>>();
+    app.UseSwagger();
 
-    var email = "noran1@gmail.com";
-    var user = await userManager.FindByEmailAsync(email);
-
-    if (user == null)
+    app.UseSwaggerUI(c =>
     {
-        user = new ApplicationUser
-        {
-            UserName = email,
-            Email = email,
-            FirstName = "Noran",
-            LastName = "Fawzy",
-            Department = "Computer Science",
-            AcademicYear = "3rd Year",
-            EmailConfirmed = true
-        };
-
-        var result = await userManager.CreateAsync(user, "Noran@1234");
-        if (result.Succeeded)
-        {
-            Console.WriteLine("User created successfully.");
-        }
-        else
-        {
-            foreach (var error in result.Errors)
-            {
-                Console.WriteLine(error.Description);
-            }
-        }
-    }
-    else
-    {
-        
-        var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
-        await userManager.ResetPasswordAsync(user, resetToken, "Noran@1234");
-
-        await userManager.SetLockoutEndDateAsync(user, null);
-        await userManager.ResetAccessFailedCountAsync(user);
-
-        Console.WriteLine("User exists: Password reset to 'Noran@1234' & Lockout cleared.");
-    }
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CampusOne API v1");
+        c.RoutePrefix = "swagger";
+    });
 }
 
-<<<<<<< Updated upstream
-// 8. Configure HTTP pipeline
-=======
-// 6. Configure HTTP pipeline
 
-app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "CampusOne API v1");
-    c.RoutePrefix = "swagger";
-});
 
->>>>>>> Stashed changes
+
 app.UseHttpsRedirection();
 
 app.UseCors("FrontendPolicy");
