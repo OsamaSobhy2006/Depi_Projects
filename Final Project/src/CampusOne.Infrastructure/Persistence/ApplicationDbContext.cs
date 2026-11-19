@@ -72,7 +72,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
                 .IsRequired();
         });
 
-        //eman
+       
 
         // University Services Configuration
 

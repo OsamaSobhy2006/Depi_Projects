@@ -5,6 +5,7 @@ using CampusOne.Application.Interfaces.UniversityServices;
 using CampusOne.Infrastructure.AI;
 using CampusOne.Infrastructure.Identity;
 using CampusOne.Infrastructure.Persistence;
+using CampusOne.Infrastructure.Persistence.Seeders;
 using CampusOne.Infrastructure.Repositories.UniversityServices;
 using CampusOne.Infrastructure.Services;
 using CampusOne.Services.AI;
@@ -126,6 +127,19 @@ builder.Services
     });
 
 var app = builder.Build();
+
+
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider
+        .GetRequiredService<ApplicationDbContext>();
+
+    await UniversityServicesSeeder.SeedAsync(context);
+}
+
+
+
 
 // 5. Configure Swagger in Development
 using (var scope = app.Services.CreateScope())
