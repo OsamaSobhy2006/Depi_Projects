@@ -1,19 +1,21 @@
+using CampusOne.Api.Hubs;
 using CampusOne.API;
 using CampusOne.API.Hubs;
+using CampusOne.Application.Interfaces;
+using CampusOne.Application.Interfaces.AI;
+using CampusOne.Application.Services;
+using CampusOne.Infrastructure.AI;
 using CampusOne.Infrastructure.Identity;
 using CampusOne.Infrastructure.Persistence;
+using CampusOne.Infrastructure.Services;
+using CampusOne.Services.AI;
+using CampusOne.Services.Chat;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Text;
-using CampusOne.Application.Interfaces.AI;
-using CampusOne.Infrastructure.AI;
-using CampusOne.Services.AI;
-using CampusOne.Application.Interfaces;
-using CampusOne.Infrastructure.Services;
-using CampusOne.Services.Chat;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +40,7 @@ builder.Services.AddScoped<IAiConversationService, AiConversationService>();
 
 builder.Services.AddScoped<IProfilePictureStorage, LocalProfilePictureStorage>();
 builder.Services.AddScoped<IChatService, ChatService>();
-
+builder.Services.AddScoped<IStudyGroupService, StudyGroupService>();
 
 builder.Services.AddCors(options =>
 {
@@ -134,7 +136,8 @@ builder.Services
                 var path = context.HttpContext.Request.Path;
 
                 if (!string.IsNullOrEmpty(accessToken) &&
-                    path.StartsWithSegments("/hubs/chat"))
+                    (path.StartsWithSegments("/hubs/chat") ||
+                     path.StartsWithSegments("/hubs/study-room")))
                 {
                     context.Token = accessToken;
                 }
@@ -145,8 +148,6 @@ builder.Services
     });
 
 var app = builder.Build();
-
-
 
 // 7. Configure Swagger in Development
 if (app.Environment.IsDevelopment())
@@ -160,9 +161,6 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-
-
-
 app.UseHttpsRedirection();
 
 app.UseCors("FrontendPolicy");
@@ -174,7 +172,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// 9. Map SignalR Hub
+// 9. Map SignalR Hubs
 app.MapHub<ChatHub>("/hubs/chat");
+app.MapHub<StudyRoomHub>("/hubs/study-room");
 
 app.Run();
