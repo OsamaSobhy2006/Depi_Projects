@@ -22,6 +22,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ConversationParticipant> ConversationParticipants => Set<ConversationParticipant>();
     public DbSet<Message> Messages => Set<Message>();
+    public DbSet<StudyGroup> StudyGroups => Set<StudyGroup>();
+    public DbSet<StudyGroupMember> StudyGroupMembers => Set<StudyGroupMember>();
+    public DbSet<StudySession> StudySessions => Set<StudySession>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -183,6 +186,99 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
                 m.ConversationId,
                 m.CreatedAt
             });
+        });
+
+        // StudyGroup Configuration
+        builder.Entity<StudyGroup>(entity =>
+        {
+            entity.HasKey(g => g.Id);
+
+            entity.Property(g => g.Title)
+                .IsRequired()
+                .HasMaxLength(150);
+
+            entity.Property(g => g.CourseCode)
+                .HasMaxLength(30);
+
+            entity.Property(g => g.Description)
+                .HasMaxLength(1000);
+
+            entity.Property(g => g.CreatedByUserId)
+                .IsRequired();
+
+            entity.Property(g => g.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(g => g.CreatedByUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasIndex(g => g.CourseCode);
+            entity.HasIndex(g => g.CreatedAt);
+        });
+
+        // StudyGroupMember Configuration
+        builder.Entity<StudyGroupMember>(entity =>
+        {
+            entity.HasKey(m => new { m.StudyGroupId, m.UserId });
+
+            entity.Property(m => m.UserId)
+                .IsRequired();
+
+            entity.Property(m => m.Role)
+                .IsRequired();
+
+            entity.Property(m => m.JoinedAt)
+                .IsRequired();
+
+            entity.HasOne(m => m.StudyGroup)
+                .WithMany(g => g.Members)
+                .HasForeignKey(m => m.StudyGroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasIndex(m => m.UserId);
+        });
+
+        // StudySession Configuration
+        builder.Entity<StudySession>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+
+            entity.Property(s => s.Topic)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(s => s.RoomCode)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(s => s.IsLive)
+                .IsRequired();
+
+            entity.Property(s => s.StartedByUserId)
+                .IsRequired();
+
+            entity.Property(s => s.StartedAt)
+                .IsRequired();
+
+            entity.HasOne(s => s.StudyGroup)
+                .WithMany(g => g.Sessions)
+                .HasForeignKey(s => s.StudyGroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(s => s.StartedByUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasIndex(s => s.RoomCode);
+            entity.HasIndex(s => new { s.StudyGroupId, s.IsLive });
         });
     }
 }
