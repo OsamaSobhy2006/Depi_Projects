@@ -24,4 +24,9 @@ public interface IServiceRequestRepository
 
     Task SaveChangesAsync(
         CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteStudentRequestAsync(
+    Guid requestId,
+    string studentId,
+    CancellationToken cancellationToken = default);
 }

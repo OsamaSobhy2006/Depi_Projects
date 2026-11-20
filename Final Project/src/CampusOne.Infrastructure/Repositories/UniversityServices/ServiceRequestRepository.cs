@@ -1,6 +1,7 @@
 ﻿
 using CampusOne.Application.Interfaces.UniversityServices;
 using CampusOne.Domain.Entities.UniversityServices;
+using CampusOne.Domain.Entities.UniversityServices.Enums;
 using CampusOne.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -65,5 +66,31 @@ public class ServiceRequestRepository : IServiceRequestRepository
         CancellationToken cancellationToken = default)
     {
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<bool> DeleteStudentRequestAsync(
+    Guid requestId,
+    string studentId,
+    CancellationToken cancellationToken = default)
+    {
+        var request = await _context.ServiceRequests
+            .FirstOrDefaultAsync(
+                r => r.Id == requestId &&
+                     r.StudentId == studentId,
+                cancellationToken);
+
+        if (request == null)
+            return false;
+
+        
+        if (request.Status != RequestStatus.Pending)
+            return false;
+
+        request.Status = RequestStatus.Cancelled;
+        request.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return true;
     }
 }

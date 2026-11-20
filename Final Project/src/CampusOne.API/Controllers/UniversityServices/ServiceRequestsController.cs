@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace CampusOne.API.Controllers.UniversityServices;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("/[controller]")]
 [Authorize]
 public class ServiceRequestsController : ControllerBase
 {
@@ -25,7 +25,7 @@ public class ServiceRequestsController : ControllerBase
         _serviceRepository = serviceRepository;
     }
 
-    // POST: api/ServiceRequests
+    // POST: /ServiceRequests
     [HttpPost]
     public async Task<IActionResult> CreateRequest(
         [FromBody] CreateServiceRequestDto dto,
@@ -80,7 +80,7 @@ public class ServiceRequestsController : ControllerBase
             response);
     }
 
-    // GET: api/ServiceRequests/my-requests
+    // GET: /ServiceRequests/my-requests
     [HttpGet("my-requests")]
     public async Task<IActionResult> GetMyRequests(
         CancellationToken cancellationToken)
@@ -98,7 +98,7 @@ public class ServiceRequestsController : ControllerBase
         return Ok(result);
     }
 
-    // GET: api/ServiceRequests/{requestId}
+    // GET: /ServiceRequests/{requestId}
     [HttpGet("{requestId:guid}")]
     public async Task<IActionResult> GetMyRequest(
         Guid requestId,
@@ -118,7 +118,7 @@ public class ServiceRequestsController : ControllerBase
         return Ok(MapToResponse(request));
     }
 
-    // PUT: api/ServiceRequests/{requestId}/status
+    // PUT: /ServiceRequests/{requestId}/status
     [HttpPut("{requestId:guid}/status")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateStatus(
@@ -149,6 +149,38 @@ public class ServiceRequestsController : ControllerBase
         return Ok(MapToResponse(request));
     }
 
+    // DELETE: /ServiceRequests/{requestId}
+    [HttpDelete("{requestId:guid}")]
+    public async Task<IActionResult> DeleteRequest(
+        Guid requestId,
+        CancellationToken cancellationToken)
+    {
+        var studentId = User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(studentId))
+            return Unauthorized();
+
+        var deleted = await _requestRepository
+            .DeleteStudentRequestAsync(
+                requestId,
+                studentId,
+                cancellationToken);
+
+        if (!deleted)
+        {
+            return BadRequest(new
+            {
+                message = "Request not found or cannot be cancelled."
+            });
+        }
+
+        return Ok(new
+        {
+            message = "Request cancelled successfully."
+        });
+    }
+
     private static ServiceRequestResponseDto MapToResponse(
         ServiceRequest request)
     {
@@ -168,4 +200,6 @@ public class ServiceRequestsController : ControllerBase
             CompletedAt = request.CompletedAt
         };
     }
+
+
 }

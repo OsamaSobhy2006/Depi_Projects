@@ -2,11 +2,12 @@
 using CampusOne.Application.DTOs.UniversityServices;
 using CampusOne.Application.Interfaces.UniversityServices;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CampusOne.API.Controllers.UniversityServices;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("/[controller]")]
 public class ServicesController : ControllerBase
 {
     private readonly IServiceRepository _serviceRepository;
@@ -89,5 +90,54 @@ public class ServicesController : ControllerBase
         };
 
         return Ok(result);
+    }
+
+    // DELETE: /Services/{serviceId}
+    [HttpDelete("{serviceId:guid}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteService(
+        Guid serviceId,
+        CancellationToken cancellationToken)
+    {
+        var deleted = await _serviceRepository
+            .DeactivateServiceAsync(serviceId, cancellationToken);
+
+        if (!deleted)
+        {
+            return NotFound(new
+            {
+                message = "Service not found."
+            });
+        }
+
+        return Ok(new
+        {
+            message = "Service deactivated successfully."
+        });
+    }
+
+
+    // DELETE: /Services/categories/{categoryId}
+    [HttpDelete("categories/{categoryId:guid}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteCategory(
+        Guid categoryId,
+        CancellationToken cancellationToken)
+    {
+        var deleted = await _serviceRepository
+            .DeactivateCategoryAsync(categoryId, cancellationToken);
+
+        if (!deleted)
+        {
+            return NotFound(new
+            {
+                message = "Category not found."
+            });
+        }
+
+        return Ok(new
+        {
+            message = "Category and its services deactivated successfully."
+        });
     }
 }

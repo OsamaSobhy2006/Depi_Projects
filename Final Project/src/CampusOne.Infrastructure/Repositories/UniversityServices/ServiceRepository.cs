@@ -51,4 +51,48 @@ public class ServiceRepository : IServiceRepository
                 s => s.Id == serviceId && s.IsActive,
                 cancellationToken);
     }
+
+    public async Task<bool> DeactivateServiceAsync(
+    Guid serviceId,
+    CancellationToken cancellationToken = default)
+    {
+        var service = await _context.ServiceItems
+            .FirstOrDefaultAsync(
+                s => s.Id == serviceId && s.IsActive,
+                cancellationToken);
+
+        if (service == null)
+            return false;
+
+        service.IsActive = false;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return true;
+    }
+
+    public async Task<bool> DeactivateCategoryAsync(
+        Guid categoryId,
+        CancellationToken cancellationToken = default)
+    {
+        var category = await _context.ServiceCategories
+            .Include(c => c.Services)
+            .FirstOrDefaultAsync(
+                c => c.Id == categoryId && c.IsActive,
+                cancellationToken);
+
+        if (category == null)
+            return false;
+
+        category.IsActive = false;
+
+        foreach (var service in category.Services)
+        {
+            service.IsActive = false;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return true;
+    }
 }

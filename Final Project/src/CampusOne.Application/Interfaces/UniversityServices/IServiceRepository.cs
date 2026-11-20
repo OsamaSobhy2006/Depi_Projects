@@ -15,4 +15,13 @@ public interface IServiceRepository
     Task<ServiceItem?> GetServiceByIdAsync(
         Guid serviceId,
         CancellationToken cancellationToken = default);
+
+
+    Task<bool> DeactivateServiceAsync(
+    Guid serviceId,
+    CancellationToken cancellationToken = default);
+
+    Task<bool> DeactivateCategoryAsync(
+        Guid categoryId,
+        CancellationToken cancellationToken = default);
 }
