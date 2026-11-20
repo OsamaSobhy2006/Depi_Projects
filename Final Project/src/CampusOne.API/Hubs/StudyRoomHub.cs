@@ -8,13 +8,22 @@ namespace CampusOne.Api.Hubs;
 [Authorize]
 public class StudyRoomHub : Hub
 {
-    private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, string>> ActiveRooms = new();
+    private record PeerInfo(string UserId, string UserName);
+
+    private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, PeerInfo>> ActiveRooms = new();
 
     private string GetUserId() =>
         Context.UserIdentifier
         ?? Context.User?.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? Context.User?.FindFirstValue("sub")
         ?? Context.ConnectionId;
+
+    private string GetUserName() =>
+        Context.User?.FindFirstValue("name")
+        ?? Context.User?.FindFirstValue(ClaimTypes.Name)
+        ?? Context.User?.Identity?.Name
+        ?? Context.User?.FindFirstValue(ClaimTypes.Email)
+        ?? "Student";
 
     public async Task JoinRoom(string roomCode)
     {
@@ -23,20 +32,27 @@ public class StudyRoomHub : Hub
 
         var cleanRoomCode = roomCode.Trim();
         var userId = GetUserId();
-        var room = ActiveRooms.GetOrAdd(cleanRoomCode, _ => new ConcurrentDictionary<string, string>());
+        var userName = GetUserName();
+        var room = ActiveRooms.GetOrAdd(cleanRoomCode, _ => new ConcurrentDictionary<string, PeerInfo>());
 
         var existingPeers = room
-            .Select(p => new { ConnectionId = p.Key, UserId = p.Value })
+            .Select(p => new
+            {
+                ConnectionId = p.Key,
+                UserId = p.Value.UserId,
+                UserName = p.Value.UserName
+            })
             .ToList();
 
-        room[Context.ConnectionId] = userId;
+        room[Context.ConnectionId] = new PeerInfo(userId, userName);
         await Groups.AddToGroupAsync(Context.ConnectionId, cleanRoomCode);
 
         await Clients.Caller.SendAsync("ExistingPeers", existingPeers);
         await Clients.OthersInGroup(cleanRoomCode).SendAsync("UserJoined", new
         {
             ConnectionId = Context.ConnectionId,
-            UserId = userId
+            UserId = userId,
+            UserName = userName
         });
     }
 
@@ -45,6 +61,7 @@ public class StudyRoomHub : Hub
         await Clients.Client(targetConnectionId).SendAsync("ReceiveOffer", new
         {
             SenderConnectionId = Context.ConnectionId,
+            SenderName = GetUserName(),
             Offer = offer
         });
     }
@@ -90,13 +107,14 @@ public class StudyRoomHub : Hub
 
     private async Task RemovePeerFromRoomAsync(string roomCode, string connectionId)
     {
-        if (ActiveRooms.TryGetValue(roomCode, out var room) && room.TryRemove(connectionId, out var userId))
+        if (ActiveRooms.TryGetValue(roomCode, out var room) && room.TryRemove(connectionId, out var peer))
         {
             await Groups.RemoveFromGroupAsync(connectionId, roomCode);
             await Clients.Group(roomCode).SendAsync("UserLeft", new
             {
                 ConnectionId = connectionId,
-                UserId = userId
+                UserId = peer.UserId,
+                UserName = peer.UserName
             });
 
             if (room.IsEmpty)
