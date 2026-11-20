@@ -12,7 +12,7 @@ using System.Text;
 namespace CampusOne.API.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("[controller]")] 
     public class AuthController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;

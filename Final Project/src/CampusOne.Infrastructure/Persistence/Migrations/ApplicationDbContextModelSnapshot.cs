@@ -81,152 +81,406 @@ namespace CampusOne.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("CampusOne.Domain.Entities.UniversityServices.ServiceCategory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                b.Property<string>("Description")
+                    .HasMaxLength(1000)
+                    .HasColumnType("nvarchar(1000)");
 
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("int");
+                b.Property<int>("DisplayOrder")
+                    .HasColumnType("int");
 
-                    b.Property<string>("Icon")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                b.Property<string>("Icon")
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                b.Property<bool>("IsActive")
+                    .HasColumnType("bit");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("Name")
-                        .IsUnique();
+                b.HasIndex("Name")
+                    .IsUnique();
 
-                    b.ToTable("ServiceCategories");
-                });
+                b.ToTable("ServiceCategories");
+            });
 
             modelBuilder.Entity("CampusOne.Domain.Entities.UniversityServices.ServiceItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid>("CategoryId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
+                b.Property<string>("Description")
+                    .IsRequired()
+                    .HasMaxLength(2000)
+                    .HasColumnType("nvarchar(2000)");
 
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("int");
+                b.Property<int>("DisplayOrder")
+                    .HasColumnType("int");
 
-                    b.Property<string>("Icon")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                b.Property<string>("Icon")
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("Instructions")
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
+                b.Property<string>("Instructions")
+                    .HasMaxLength(4000)
+                    .HasColumnType("nvarchar(4000)");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                b.Property<bool>("IsActive")
+                    .HasColumnType("bit");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(150)
+                    .HasColumnType("nvarchar(150)");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("CategoryId", "Name")
-                        .IsUnique();
+                b.HasIndex("CategoryId", "Name")
+                    .IsUnique();
 
-                    b.ToTable("ServiceItems");
-                });
+                b.ToTable("ServiceItems");
+            });
 
             modelBuilder.Entity("CampusOne.Domain.Entities.UniversityServices.ServiceRequest", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("AdminNotes")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
+                b.Property<string>("AdminNotes")
+                    .HasMaxLength(2000)
+                    .HasColumnType("nvarchar(2000)");
 
-                    b.Property<string>("AssignedTo")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
+                b.Property<string>("AssignedTo")
+                    .HasMaxLength(450)
+                    .HasColumnType("nvarchar(450)");
 
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("CompletedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(3000)
-                        .HasColumnType("nvarchar(3000)");
+                b.Property<string>("Description")
+                    .IsRequired()
+                    .HasMaxLength(3000)
+                    .HasColumnType("nvarchar(3000)");
 
-                    b.Property<string>("Priority")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                b.Property<string>("Priority")
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnType("nvarchar(20)");
 
-                    b.Property<string>("RequestNumber")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                b.Property<string>("RequestNumber")
+                    .IsRequired()
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
 
-                    b.Property<Guid>("ServiceItemId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid>("ServiceItemId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
 
-                    b.Property<string>("StudentId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
+                b.Property<string>("StudentId")
+                    .IsRequired()
+                    .HasMaxLength(450)
+                    .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("Subject")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                b.Property<string>("Subject")
+                    .IsRequired()
+                    .HasMaxLength(150)
+                    .HasColumnType("nvarchar(150)");
 
-                    b.Property<DateTime>("SubmittedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("SubmittedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("UpdatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("RequestNumber")
-                        .IsUnique();
+                b.HasIndex("RequestNumber")
+                    .IsUnique();
 
-                    b.HasIndex("ServiceItemId");
+                b.HasIndex("ServiceItemId");
 
-                    b.HasIndex("StudentId", "SubmittedAt");
+                b.HasIndex("StudentId", "SubmittedAt");
 
-                    b.ToTable("ServiceRequests");
-                });
+                b.ToTable("ServiceRequests");
+            });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.Book", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
+
+                SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                b.Property<string>("Author")
+                    .IsRequired()
+                    .HasMaxLength(150)
+                    .HasColumnType("nvarchar(150)");
+
+                b.Property<string>("Cover")
+                    .IsRequired()
+                    .HasMaxLength(500)
+                    .HasColumnType("nvarchar(500)");
+
+                b.Property<string>("Description")
+                    .HasMaxLength(1000)
+                    .HasColumnType("nvarchar(1000)");
+
+                b.Property<string>("FileUrl")
+                    .HasMaxLength(2048)
+                    .HasColumnType("nvarchar(2048)");
+
+                b.Property<bool>("IsAvailable")
+                    .HasColumnType("bit");
+
+                b.Property<string>("Title")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("nvarchar(200)");
+
+                b.HasKey("Id");
+
+                b.ToTable("Books");
+            });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.BorrowRequest", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
+
+                SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                b.Property<int>("BookId")
+                    .HasColumnType("int");
+
+                b.Property<DateTime>("BorrowDate")
+                    .HasColumnType("datetime2");
+
+                b.Property<DateTime>("DueDate")
+                    .HasColumnType("datetime2");
+
+                b.Property<decimal>("FineAmount")
+                    .HasColumnType("decimal(18,2)");
+
+                b.Property<bool>("IsFinePaid")
+                    .HasColumnType("bit");
+
+                b.Property<DateTime?>("PaidAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<DateTime?>("ReturnDate")
+                    .HasColumnType("datetime2");
+
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnType("nvarchar(50)");
+
+                b.Property<string>("StripeCheckoutSessionId")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("UserId")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(450)");
+
+                b.HasKey("Id");
+
+                b.HasIndex("BookId");
+
+                b.HasIndex("UserId");
+
+                b.ToTable("BorrowRequests");
+            });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.Chat.Conversation", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<DateTime>("UpdatedAt")
+                    .HasColumnType("datetime2");
+
+                b.HasKey("Id");
+
+                b.HasIndex("UpdatedAt");
+
+                b.ToTable("Conversations");
+            });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.Chat.ConversationParticipant", b =>
+            {
+                b.Property<Guid>("ConversationId")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("UserId")
+                    .HasColumnType("nvarchar(450)");
+
+                b.HasKey("ConversationId", "UserId");
+
+                b.HasIndex("UserId");
+
+                b.ToTable("ConversationParticipants");
+            });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.Chat.Message", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("Content")
+                    .IsRequired()
+                    .HasMaxLength(5000)
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<Guid>("ConversationId")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<string>("SenderId")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(450)");
+
+                b.HasKey("Id");
+
+                b.HasIndex("SenderId");
+
+                b.HasIndex("ConversationId", "CreatedAt");
+
+                b.ToTable("Messages");
+            });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.StudyGroup", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("CourseCode")
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
+
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<string>("CreatedByUserId")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(450)");
+
+                b.Property<string>("Description")
+                    .HasMaxLength(1000)
+                    .HasColumnType("nvarchar(1000)");
+
+                b.Property<string>("Title")
+                    .IsRequired()
+                    .HasMaxLength(150)
+                    .HasColumnType("nvarchar(150)");
+
+                b.HasKey("Id");
+
+                b.HasIndex("CourseCode");
+
+                b.HasIndex("CreatedAt");
+
+                b.HasIndex("CreatedByUserId");
+
+                b.ToTable("StudyGroups");
+            });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.StudyGroupMember", b =>
+            {
+                b.Property<Guid>("StudyGroupId")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("UserId")
+                    .HasColumnType("nvarchar(450)");
+
+                b.Property<DateTime>("JoinedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<int>("Role")
+                    .HasColumnType("int");
+
+                b.HasKey("StudyGroupId", "UserId");
+
+                b.HasIndex("UserId");
+
+                b.ToTable("StudyGroupMembers");
+            });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.StudySession", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<DateTime?>("EndedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<bool>("IsLive")
+                    .HasColumnType("bit");
+
+                b.Property<string>("RoomCode")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
+
+                b.Property<DateTime>("StartedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<string>("StartedByUserId")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(450)");
+
+                b.Property<Guid>("StudyGroupId")
+                    .HasColumnType("uniqueidentifier");
+
+                b.Property<string>("Topic")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("nvarchar(200)");
+
+                b.HasKey("Id");
+
+                b.HasIndex("RoomCode");
+
+                b.HasIndex("StartedByUserId");
+
+                b.HasIndex("StudyGroupId", "IsLive");
+
+                b.ToTable("StudySessions");
+            });
 
             modelBuilder.Entity("CampusOne.Infrastructure.Identity.ApplicationUser", b =>
                 {
@@ -463,34 +717,127 @@ namespace CampusOne.Infrastructure.Persistence.Migrations
                     b.Navigation("Conversation");
                 });
 
-            modelBuilder.Entity("CampusOne.Domain.Entities.UniversityServices.ServiceItem", b =>
+            modelBuilder.Entity("CampusOne.Domain.Entities.BorrowRequest", b =>
                 {
-                    b.HasOne("CampusOne.Domain.Entities.UniversityServices.ServiceCategory", "Category")
-                        .WithMany("Services")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Category");
-                });
-
-            modelBuilder.Entity("CampusOne.Domain.Entities.UniversityServices.ServiceRequest", b =>
-                {
-                    b.HasOne("CampusOne.Domain.Entities.UniversityServices.ServiceItem", "ServiceItem")
-                        .WithMany("Requests")
-                        .HasForeignKey("ServiceItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                    b.HasOne("CampusOne.Domain.Entities.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("CampusOne.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ServiceItem");
+                    b.Navigation("Book");
                 });
 
+            modelBuilder.Entity("CampusOne.Domain.Entities.Chat.ConversationParticipant", b =>
+                {
+                    b.HasOne("CampusOne.Domain.Entities.Chat.Conversation", "Conversation")
+                        .WithMany("Participants")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CampusOne.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.Chat.Message", b =>
+                {
+                    b.HasOne("CampusOne.Domain.Entities.Chat.Conversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CampusOne.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.UniversityServices.ServiceItem", b =>
+            {
+                b.HasOne("CampusOne.Domain.Entities.UniversityServices.ServiceCategory", "Category")
+                    .WithMany("Services")
+                    .HasForeignKey("CategoryId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                b.Navigation("Category");
+            });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.UniversityServices.ServiceRequest", b =>
+            {
+                b.HasOne("CampusOne.Domain.Entities.UniversityServices.ServiceItem", "ServiceItem")
+                    .WithMany("Requests")
+                    .HasForeignKey("ServiceItemId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                b.HasOne("CampusOne.Infrastructure.Identity.ApplicationUser", null)
+                    .WithMany()
+                    .HasForeignKey("StudentId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                b.Navigation("ServiceItem");
+            });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.StudyGroup", b =>
+            {
+                b.HasOne("CampusOne.Infrastructure.Identity.ApplicationUser", null)
+                    .WithMany()
+                    .HasForeignKey("CreatedByUserId")
+                    .OnDelete(DeleteBehavior.NoAction)
+                    .IsRequired();
+            });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.StudyGroupMember", b =>
+            {
+                b.HasOne("CampusOne.Domain.Entities.StudyGroup", "StudyGroup")
+                    .WithMany("Members")
+                    .HasForeignKey("StudyGroupId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.HasOne("CampusOne.Infrastructure.Identity.ApplicationUser", null)
+                    .WithMany()
+                    .HasForeignKey("UserId")
+                    .OnDelete(DeleteBehavior.NoAction)
+                    .IsRequired();
+
+                b.Navigation("StudyGroup");
+            });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.StudySession", b =>
+            {
+                b.HasOne("CampusOne.Infrastructure.Identity.ApplicationUser", null)
+                    .WithMany()
+                    .HasForeignKey("StartedByUserId")
+                    .OnDelete(DeleteBehavior.NoAction)
+                    .IsRequired();
+
+                b.HasOne("CampusOne.Domain.Entities.StudyGroup", "StudyGroup")
+                    .WithMany("Sessions")
+                    .HasForeignKey("StudyGroupId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.Navigation("StudyGroup");
+            });
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -545,6 +892,20 @@ namespace CampusOne.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("CampusOne.Domain.Entities.AI.AiConversation", b =>
                 {
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.Chat.Conversation", b =>
+                {
+                    b.Navigation("Messages");
+
+                    b.Navigation("Participants");
+                });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.StudyGroup", b =>
+                {
+                    b.Navigation("Members");
+
+                    b.Navigation("Sessions");
                 });
 
             modelBuilder.Entity("CampusOne.Domain.Entities.UniversityServices.ServiceCategory", b =>
