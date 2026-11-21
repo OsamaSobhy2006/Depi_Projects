@@ -4,18 +4,23 @@ using CampusOne.API;
 using CampusOne.API.Hubs;
 using CampusOne.Application.Interfaces;
 using CampusOne.Application.Interfaces.AI;
+using CampusOne.Application.Interfaces.UniversityServices;
 using CampusOne.Application.Services;
 using CampusOne.Infrastructure.AI;
 using CampusOne.Infrastructure.Identity;
 using CampusOne.Infrastructure.Persistence;
+using CampusOne.Infrastructure.Persistence.Seeders;
+using CampusOne.Infrastructure.Repositories.UniversityServices;
 using CampusOne.Infrastructure.Services;
 using CampusOne.Services.AI;
 using CampusOne.Services.Chat;
+using CampusOne.Services.UniversityServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using System;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,8 +29,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
+// University Services
+builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
+builder.Services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
+builder.Services.AddScoped<ServiceService>();
+builder.Services.AddScoped<ServiceRequestService>();
+
+// SignalR
 builder.Services.AddSignalR();
 
+// AI Services
 builder.Services.AddHttpClient<EmbeddingService>();
 builder.Services.AddHttpClient<LlmService>();
 
@@ -39,6 +52,7 @@ builder.Services.AddScoped<IRagService, RagService>();
 builder.Services.AddScoped<IAiOrchestrator, AiOrchestrator>();
 builder.Services.AddScoped<IAiConversationService, AiConversationService>();
 
+// Profile and Chat Services
 builder.Services.AddScoped<IProfilePictureStorage, LocalProfilePictureStorage>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IStudyGroupService, StudyGroupService>();
@@ -131,6 +145,7 @@ builder.Services
             ClockSkew = TimeSpan.Zero
         };
 
+        // SignalR JWT Authentication
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -150,9 +165,10 @@ builder.Services
         };
     });
 
+// 7. Build Application
 var app = builder.Build();
 
-// 7. Configure Swagger
+// 8. Configure Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -164,6 +180,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// 9. Configure Middleware
 app.UseHttpsRedirection();
 
 app.UseCors("FrontendPolicy");
@@ -173,42 +190,11 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// 10. Map Controllers
 app.MapControllers();
 
-// 8. Map SignalR Hubs
+// 11. Map SignalR Hubs
 app.MapHub<ChatHub>("/hubs/chat");
 app.MapHub<StudyRoomHub>("/hubs/study-room");
-
-// 9. TEMPORARY PASSWORD RESET
-using (var scope = app.Services.CreateScope())
-{
-    var userManager = scope.ServiceProvider
-        .GetRequiredService<UserManager<ApplicationUser>>();
-
-    var user = await userManager.FindByEmailAsync("noran1@gmail.com");
-
-    if (user != null)
-    {
-        var token = await userManager.GeneratePasswordResetTokenAsync(user);
-
-        var result = await userManager.ResetPasswordAsync(
-            user,
-            token,
-            "CampusOne@2026New"
-        );
-
-        if (!result.Succeeded)
-        {
-            throw new Exception(string.Join(", ",
-                result.Errors.Select(e => e.Description)));
-        }
-
-        Console.WriteLine("Password reset successfully!");
-    }
-    else
-    {
-        Console.WriteLine("User not found!");
-    }
-}
 
 app.Run();
