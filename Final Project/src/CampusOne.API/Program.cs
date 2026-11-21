@@ -1,14 +1,18 @@
 using CampusOne.Api.Hubs;
 using CampusOne.API;
-using CampusOne.API.Hubs;
 using CampusOne.Application.Interfaces;
 using CampusOne.Application.Interfaces.AI;
-using CampusOne.Application.Services;
+using CampusOne.Application.Interfaces.UniversityServices;
 using CampusOne.Infrastructure.AI;
+using CampusOne.API.Hubs;
+using CampusOne.Application.Services;
 using CampusOne.Infrastructure.Identity;
 using CampusOne.Infrastructure.Persistence;
+using CampusOne.Infrastructure.Persistence.Seeders;
+using CampusOne.Infrastructure.Repositories.UniversityServices;
 using CampusOne.Infrastructure.Services;
 using CampusOne.Services.AI;
+using CampusOne.Services.UniversityServices;
 using CampusOne.Services.Chat;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -21,6 +25,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. Register services
 builder.Services.AddControllers();
+
+// University Services Repositories
+builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
+builder.Services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
+builder.Services.AddScoped<ServiceService>();
+builder.Services.AddScoped<ServiceRequestService>();
+
+
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSignalR();
@@ -159,21 +171,32 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "CampusOne API v1");
         c.RoutePrefix = "swagger";
     });
+
+
+
+    // 5. Configure Swagger in Development
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
+
+    app.UseHttpsRedirection();
+
+    app.UseCors("FrontendPolicy");
+
+    app.UseStaticFiles();
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+
+
+    app.MapControllers();
+
+    // 9. Map SignalR Hubs
+    app.MapHub<ChatHub>("/hubs/chat");
+    app.MapHub<StudyRoomHub>("/hubs/study-room");
+
+    app.Run();
 }
-
-app.UseHttpsRedirection();
-
-app.UseCors("FrontendPolicy");
-
-app.UseStaticFiles();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
-
-// 9. Map SignalR Hubs
-app.MapHub<ChatHub>("/hubs/chat");
-app.MapHub<StudyRoomHub>("/hubs/study-room");
-
-app.Run();
