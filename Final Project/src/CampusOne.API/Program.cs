@@ -1,42 +1,44 @@
+
 using CampusOne.Api.Hubs;
 using CampusOne.API;
+using CampusOne.API.Hubs;
 using CampusOne.Application.Interfaces;
 using CampusOne.Application.Interfaces.AI;
 using CampusOne.Application.Interfaces.UniversityServices;
-using CampusOne.Infrastructure.AI;
-using CampusOne.API.Hubs;
 using CampusOne.Application.Services;
+using CampusOne.Infrastructure.AI;
 using CampusOne.Infrastructure.Identity;
 using CampusOne.Infrastructure.Persistence;
 using CampusOne.Infrastructure.Persistence.Seeders;
 using CampusOne.Infrastructure.Repositories.UniversityServices;
 using CampusOne.Infrastructure.Services;
 using CampusOne.Services.AI;
-using CampusOne.Services.UniversityServices;
 using CampusOne.Services.Chat;
+using CampusOne.Services.UniversityServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using System;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Register services
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
 
-// University Services Repositories
+// University Services
 builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
 builder.Services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
 builder.Services.AddScoped<ServiceService>();
 builder.Services.AddScoped<ServiceRequestService>();
 
-
-builder.Services.AddEndpointsApiExplorer();
-
+// SignalR
 builder.Services.AddSignalR();
 
+// AI Services
 builder.Services.AddHttpClient<EmbeddingService>();
 builder.Services.AddHttpClient<LlmService>();
 
@@ -50,10 +52,12 @@ builder.Services.AddScoped<IRagService, RagService>();
 builder.Services.AddScoped<IAiOrchestrator, AiOrchestrator>();
 builder.Services.AddScoped<IAiConversationService, AiConversationService>();
 
+// Profile and Chat Services
 builder.Services.AddScoped<IProfilePictureStorage, LocalProfilePictureStorage>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IStudyGroupService, StudyGroupService>();
 
+// 2. Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
@@ -107,8 +111,10 @@ builder.Services
 // 6. Configure JWT
 var jwtSecret = builder.Configuration["Jwt:SecretKey"]
     ?? throw new InvalidOperationException("Jwt:SecretKey is missing");
+
 var jwtIssuer = builder.Configuration["Jwt:Issuer"]
     ?? throw new InvalidOperationException("Jwt:Issuer is missing");
+
 var jwtAudience = builder.Configuration["Jwt:Audience"]
     ?? throw new InvalidOperationException("Jwt:Audience is missing");
 
@@ -139,7 +145,7 @@ builder.Services
             ClockSkew = TimeSpan.Zero
         };
 
-        // SignalR sends the JWT through the access_token query parameter.
+        // SignalR JWT Authentication
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -159,9 +165,10 @@ builder.Services
         };
     });
 
+// 7. Build Application
 var app = builder.Build();
 
-// 7. Configure Swagger in Development
+// 8. Configure Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -171,32 +178,23 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "CampusOne API v1");
         c.RoutePrefix = "swagger";
     });
-
-
-
-    // 5. Configure Swagger in Development
-    if (app.Environment.IsDevelopment())
-    {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
-
-    app.UseHttpsRedirection();
-
-    app.UseCors("FrontendPolicy");
-
-    app.UseStaticFiles();
-
-    app.UseAuthentication();
-    app.UseAuthorization();
-
-
-
-    app.MapControllers();
-
-    // 9. Map SignalR Hubs
-    app.MapHub<ChatHub>("/hubs/chat");
-    app.MapHub<StudyRoomHub>("/hubs/study-room");
-
-    app.Run();
 }
+
+// 9. Configure Middleware
+app.UseHttpsRedirection();
+
+app.UseCors("FrontendPolicy");
+
+app.UseStaticFiles();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// 10. Map Controllers
+app.MapControllers();
+
+// 11. Map SignalR Hubs
+app.MapHub<ChatHub>("/hubs/chat");
+app.MapHub<StudyRoomHub>("/hubs/study-room");
+
+app.Run();

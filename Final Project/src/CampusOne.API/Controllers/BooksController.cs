@@ -1,7 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using CampusOne.Domain.Entities;
 using CampusOne.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 
@@ -19,7 +18,12 @@ namespace CampusOne.Api.Controllers
             _context = context;
         }
 
-        // GET: api/books/featured
+        private static string Normalize(string value)
+        {
+            return (value ?? "").Trim().ToLower();
+        }
+
+        // GET: /Books/featured
         [HttpGet("featured")]
         public async Task<IActionResult> GetFeaturedBooks()
         {
@@ -27,93 +31,96 @@ namespace CampusOne.Api.Controllers
                 .AsNoTracking()
                 .ToListAsync();
 
-            // Remove duplicate books by title and author
             var uniqueBooks = books
                 .GroupBy(b => new
                 {
-                    Title = b.Title.Trim().ToLower(),
-                    Author = b.Author.Trim().ToLower()
+                    Title = Normalize(b.Title),
+                    Author = Normalize(b.Author)
                 })
-                .Select(g => g.First())
-                .Select(b => new
+                .Select(g =>
                 {
-                    b.Id,
-                    b.Title,
-                    b.Author,
-                    b.Cover,
-                    b.IsAvailable
+                    var book = g.First();
+
+                    return new
+                    {
+                        book.Id,
+                        book.Title,
+                        book.Author,
+                        book.Cover,
+                        IsAvailable = g.Any(b => b.IsAvailable)
+                    };
                 })
                 .ToList();
 
             return Ok(uniqueBooks);
         }
 
-        // GET: api/books/search?q=clean
+        // GET: /Books/search?q=clean
         [HttpGet("search")]
         public async Task<IActionResult> SearchBooks([FromQuery] string q)
         {
             if (string.IsNullOrWhiteSpace(q))
-            {
                 return BadRequest("Search query cannot be empty.");
-            }
 
             q = q.Trim();
 
             var books = await _context.Books
                 .AsNoTracking()
-                .Where(b =>
-                    b.Title.Contains(q) ||
-                    b.Author.Contains(q))
+                .Where(b => b.Title.Contains(q) || b.Author.Contains(q))
                 .ToListAsync();
 
-            // Remove duplicate search results
             var uniqueBooks = books
                 .GroupBy(b => new
                 {
-                    Title = b.Title.Trim().ToLower(),
-                    Author = b.Author.Trim().ToLower()
+                    Title = Normalize(b.Title),
+                    Author = Normalize(b.Author)
                 })
-                .Select(g => g.First())
-                .Select(b => new
+                .Select(g =>
                 {
-                    b.Id,
-                    b.Title,
-                    b.Author,
-                    b.Cover,
-                    b.IsAvailable
+                    var book = g.First();
+
+                    return new
+                    {
+                        book.Id,
+                        book.Title,
+                        book.Author,
+                        book.Cover,
+                        IsAvailable = g.Any(b => b.IsAvailable)
+                    };
                 })
                 .ToList();
 
             return Ok(uniqueBooks);
         }
 
-
-        // GET: api/books/5
+        // GET: /Books/5
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetBookById(int id)
         {
             var book = await _context.Books
                 .AsNoTracking()
-                .Where(b => b.Id == id)
-                .Select(b => new
-                {
-                    b.Id,
-                    b.Title,
-                    b.Author,
-                    b.Cover,
-                    b.Description,
-                    b.FileUrl,
-                    b.IsAvailable
-                })
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(b => b.Id == id);
 
             if (book == null)
-            {
                 return NotFound("Book not found.");
-            }
 
-            return Ok(book);
+            var isAvailable = await _context.Books
+                .AsNoTracking()
+                .AnyAsync(b =>
+                    b.Title == book.Title &&
+                    b.Author == book.Author &&
+                    b.IsAvailable);
+
+            return Ok(new
+            {
+                book.Id,
+                book.Title,
+                book.Author,
+                book.Cover,
+                book.Description,
+                book.FileUrl,
+                IsAvailable = isAvailable
+            });
         }
-
     }
 }
