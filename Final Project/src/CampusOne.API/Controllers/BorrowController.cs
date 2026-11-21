@@ -1,4 +1,6 @@
-﻿using System.Security.Claims;
+﻿
+using System.Data;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CampusOne.Domain.Entities;
@@ -17,8 +19,8 @@ namespace CampusOne.Api.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
 
-        private const decimal FinePerDay = 10.00m;
-        private const int BorrowingDays = 14;
+        private const decimal FinePerDay = 50.00m;
+        private const int BorrowingDays = 2;
 
         public BorrowController(
             ApplicationDbContext context,
@@ -28,7 +30,6 @@ namespace CampusOne.Api.Controllers
             _configuration = configuration;
         }
 
-        // دالة لجلب الـ UserId الحقيقي من الـ JWT Token للمستخدم الحالي
         private string GetCurrentUserId()
         {
             return User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -36,17 +37,15 @@ namespace CampusOne.Api.Controllers
                    ?? string.Empty;
         }
 
-        // Calculate fine: 10 EGP for each started overdue day
+        // Calculate fine based on calendar days
         private static decimal CalculateFine(
             DateTime dueDate,
             DateTime currentDate)
         {
-            if (currentDate <= dueDate)
-                return 0;
+            var overdueDays = (currentDate.Date - dueDate.Date).Days;
 
-            var overdueDays = (int)Math.Ceiling(
-                (currentDate - dueDate).TotalDays
-            );
+            if (overdueDays <= 0)
+                return 0;
 
             return overdueDays * FinePerDay;
         }
@@ -56,23 +55,63 @@ namespace CampusOne.Api.Controllers
         public async Task<IActionResult> BorrowBook(int bookId)
         {
             var userId = GetCurrentUserId();
+
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("User is not authenticated.");
 
-            var book = await _context.Books.FindAsync(bookId);
+            // Serializable transaction protects availability
+            // when multiple users try to borrow at the same time.
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync(
+                    IsolationLevel.Serializable);
 
-            if (book == null)
+            var selectedBook = await _context.Books
+                .FirstOrDefaultAsync(b => b.Id == bookId);
+
+            if (selectedBook == null)
                 return NotFound("Book not found.");
 
-            if (!book.IsAvailable)
-                return BadRequest("Book is not available for borrowing.");
+            // Do not allow the same user to borrow
+            // another copy of the same title simultaneously.
+            var alreadyBorrowed = await _context.BorrowRequests
+                .AnyAsync(r =>
+                    r.UserId == userId &&
+                    r.Status != "Returned" &&
+                    r.Book != null &&
+                    r.Book.Title == selectedBook.Title &&
+                    r.Book.Author == selectedBook.Author);
+
+            if (alreadyBorrowed)
+            {
+                return BadRequest(new
+                {
+                    message = "You have already borrowed this book."
+                });
+            }
+
+            // Find any available physical copy of the same book.
+            var availableCopy = await _context.Books
+                .Where(b =>
+                    b.Title == selectedBook.Title &&
+                    b.Author == selectedBook.Author &&
+                    b.IsAvailable)
+                .OrderBy(b => b.Id)
+                .FirstOrDefaultAsync();
+
+            if (availableCopy == null)
+            {
+                return BadRequest(new
+                {
+                    message = "Book is not available for borrowing."
+                });
+            }
 
             var borrowDate = DateTime.Now;
 
             var request = new BorrowRequest
             {
-                BookId = bookId,
-                UserId = userId, // استخدام الـ ID الحقيقي للمستخدم الحالي
+                BookId = availableCopy.Id,
+                UserId = userId,
                 BorrowDate = borrowDate,
                 DueDate = borrowDate.AddDays(BorrowingDays),
                 Status = "Borrowed",
@@ -80,15 +119,16 @@ namespace CampusOne.Api.Controllers
                 IsFinePaid = false
             };
 
-            book.IsAvailable = false;
+            availableCopy.IsAvailable = false;
 
             _context.BorrowRequests.Add(request);
 
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return Ok(new
             {
-                message = "Book borrowed successfully!",
+                message = "Book borrowed successfully for 2 days.",
                 request = new
                 {
                     request.Id,
@@ -102,19 +142,38 @@ namespace CampusOne.Api.Controllers
             });
         }
 
-        // 2. Get Latest Borrow Status for a Book
+        // 2. Get Global Availability + Current User Borrow Status
         [HttpGet("status/{bookId}")]
         public async Task<IActionResult> GetBorrowStatus(int bookId)
         {
             var userId = GetCurrentUserId();
+
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("User is not authenticated.");
 
+            var book = await _context.Books
+                .FirstOrDefaultAsync(b => b.Id == bookId);
+
+            if (book == null)
+                return NotFound("Book not found.");
+
+            // Availability is based on ALL copies of this title.
+            var bookIsAvailable = await _context.Books
+                .AnyAsync(b =>
+                    b.Title == book.Title &&
+                    b.Author == book.Author &&
+                    b.IsAvailable);
+
+            // Retrieve only this user's records for all copies
+            // of the same title. Prefer an active record.
             var request = await _context.BorrowRequests
                 .Where(r =>
-                    r.BookId == bookId &&
-                    r.UserId == userId)
-                .OrderByDescending(r => r.BorrowDate)
+                    r.UserId == userId &&
+                    r.Book != null &&
+                    r.Book.Title == book.Title &&
+                    r.Book.Author == book.Author)
+                .OrderBy(r => r.Status == "Returned" ? 1 : 0)
+                .ThenByDescending(r => r.BorrowDate)
                 .ThenByDescending(r => r.Id)
                 .FirstOrDefaultAsync();
 
@@ -122,12 +181,15 @@ namespace CampusOne.Api.Controllers
             {
                 return Ok(new
                 {
+                    bookIsAvailable,
                     isBorrowed = false,
                     id = (int?)null,
                     borrowDate = (DateTime?)null,
                     dueDate = (DateTime?)null,
                     returnDate = (DateTime?)null,
-                    status = "Available",
+                    status = bookIsAvailable
+                        ? "Available"
+                        : "CurrentlyBorrowed",
                     fineAmount = 0m,
                     isFinePaid = false
                 });
@@ -135,7 +197,9 @@ namespace CampusOne.Api.Controllers
 
             var isBorrowed = request.Status != "Returned";
 
-            if (isBorrowed && DateTime.Now > request.DueDate)
+            // Calculate overdue fine for this user only.
+            if (isBorrowed &&
+                DateTime.Now.Date > request.DueDate.Date)
             {
                 request.Status = "Overdue";
 
@@ -143,8 +207,7 @@ namespace CampusOne.Api.Controllers
                 {
                     request.FineAmount = CalculateFine(
                         request.DueDate,
-                        DateTime.Now
-                    );
+                        DateTime.Now);
                 }
 
                 await _context.SaveChangesAsync();
@@ -152,22 +215,24 @@ namespace CampusOne.Api.Controllers
 
             return Ok(new
             {
+                bookIsAvailable,
                 isBorrowed,
                 request.Id,
                 borrowDate = request.BorrowDate,
                 dueDate = request.DueDate,
                 returnDate = request.ReturnDate,
-                request.Status,
+                status = request.Status,
                 fineAmount = request.FineAmount,
-                request.IsFinePaid
+                isFinePaid = request.IsFinePaid
             });
         }
 
-        // 3. Get All Borrowed Books for Current User
+        // 3. Get All Borrowing Records for Current User
         [HttpGet("my-borrowed-books")]
         public async Task<IActionResult> GetMyBorrowedBooks()
         {
             var userId = GetCurrentUserId();
+
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("User is not authenticated.");
 
@@ -183,7 +248,7 @@ namespace CampusOne.Api.Controllers
             foreach (var request in requests)
             {
                 if (request.Status != "Returned" &&
-                    currentDate > request.DueDate)
+                    currentDate.Date > request.DueDate.Date)
                 {
                     request.Status = "Overdue";
 
@@ -191,8 +256,7 @@ namespace CampusOne.Api.Controllers
                     {
                         request.FineAmount = CalculateFine(
                             request.DueDate,
-                            currentDate
-                        );
+                            currentDate);
                     }
 
                     hasChanges = true;
@@ -200,9 +264,7 @@ namespace CampusOne.Api.Controllers
             }
 
             if (hasChanges)
-            {
                 await _context.SaveChangesAsync();
-            }
 
             var result = requests.Select(request => new
             {
@@ -230,6 +292,7 @@ namespace CampusOne.Api.Controllers
         public async Task<IActionResult> ReturnBook(int borrowRequestId)
         {
             var userId = GetCurrentUserId();
+
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("User is not authenticated.");
 
@@ -247,17 +310,19 @@ namespace CampusOne.Api.Controllers
 
             var returnDate = DateTime.Now;
 
-            if (returnDate > request.DueDate && !request.IsFinePaid)
+            // Save the fine before marking the book as returned.
+            if (returnDate.Date > request.DueDate.Date &&
+                !request.IsFinePaid)
             {
                 request.FineAmount = CalculateFine(
                     request.DueDate,
-                    returnDate
-                );
+                    returnDate);
             }
 
             request.ReturnDate = returnDate;
             request.Status = "Returned";
 
+            // Make ONLY the borrowed physical copy available again.
             if (request.Book != null)
             {
                 request.Book.IsAvailable = true;
@@ -283,9 +348,11 @@ namespace CampusOne.Api.Controllers
             int borrowRequestId)
         {
             var userId = GetCurrentUserId();
+
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("User is not authenticated.");
 
+            // A user can only pay their own fine.
             var request = await _context.BorrowRequests
                 .FirstOrDefaultAsync(r =>
                     r.Id == borrowRequestId &&
@@ -297,17 +364,18 @@ namespace CampusOne.Api.Controllers
             if (request.IsFinePaid)
                 return BadRequest("Fine has already been paid.");
 
+            // If the book has not been returned,
+            // calculate the current overdue fine.
             if (request.Status != "Returned")
             {
-                if (DateTime.Now <= request.DueDate)
+                if (DateTime.Now.Date <= request.DueDate.Date)
                     return BadRequest("There is no overdue fine yet.");
 
                 request.Status = "Overdue";
 
                 request.FineAmount = CalculateFine(
                     request.DueDate,
-                    DateTime.Now
-                );
+                    DateTime.Now);
             }
 
             if (request.FineAmount <= 0)
@@ -346,8 +414,7 @@ namespace CampusOne.Api.Controllers
                             Currency = "egp",
 
                             UnitAmount = (long)(
-                                request.FineAmount * 100
-                            ),
+                                request.FineAmount * 100),
 
                             ProductData =
                                 new SessionLineItemPriceDataProductDataOptions
@@ -362,7 +429,6 @@ namespace CampusOne.Api.Controllers
             };
 
             var service = new SessionService();
-
             var session = await service.CreateAsync(options);
 
             request.StripeCheckoutSessionId = session.Id;
@@ -382,8 +448,7 @@ namespace CampusOne.Api.Controllers
         public async Task<IActionResult> StripeWebhook()
         {
             var json = await new StreamReader(
-                HttpContext.Request.Body
-            ).ReadToEndAsync();
+                HttpContext.Request.Body).ReadToEndAsync();
 
             var stripeSignature = Request.Headers["Stripe-Signature"];
 
@@ -404,18 +469,15 @@ namespace CampusOne.Api.Controllers
                     json,
                     stripeSignature,
                     webhookSecret,
-                    throwOnApiVersionMismatch: false
-                );
+                    throwOnApiVersionMismatch: false);
             }
             catch (StripeException ex)
             {
                 Console.WriteLine(
-                    "STRIPE WEBHOOK ERROR: " + ex.Message
-                );
+                    "STRIPE WEBHOOK ERROR: " + ex.Message);
 
                 return BadRequest(
-                    "Invalid Stripe signature: " + ex.Message
-                );
+                    "Invalid Stripe signature: " + ex.Message);
             }
 
             if (stripeEvent.Type == "checkout.session.completed")

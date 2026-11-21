@@ -1,3 +1,4 @@
+
 using CampusOne.Api.Hubs;
 using CampusOne.API;
 using CampusOne.API.Hubs;
@@ -42,6 +43,7 @@ builder.Services.AddScoped<IProfilePictureStorage, LocalProfilePictureStorage>()
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IStudyGroupService, StudyGroupService>();
 
+// 2. Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
@@ -95,8 +97,10 @@ builder.Services
 // 6. Configure JWT
 var jwtSecret = builder.Configuration["Jwt:SecretKey"]
     ?? throw new InvalidOperationException("Jwt:SecretKey is missing");
+
 var jwtIssuer = builder.Configuration["Jwt:Issuer"]
     ?? throw new InvalidOperationException("Jwt:Issuer is missing");
+
 var jwtAudience = builder.Configuration["Jwt:Audience"]
     ?? throw new InvalidOperationException("Jwt:Audience is missing");
 
@@ -127,7 +131,6 @@ builder.Services
             ClockSkew = TimeSpan.Zero
         };
 
-        // SignalR sends the JWT through the access_token query parameter.
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -149,7 +152,7 @@ builder.Services
 
 var app = builder.Build();
 
-// 7. Configure Swagger in Development
+// 7. Configure Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -172,8 +175,40 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// 9. Map SignalR Hubs
+// 8. Map SignalR Hubs
 app.MapHub<ChatHub>("/hubs/chat");
 app.MapHub<StudyRoomHub>("/hubs/study-room");
+
+// 9. TEMPORARY PASSWORD RESET
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider
+        .GetRequiredService<UserManager<ApplicationUser>>();
+
+    var user = await userManager.FindByEmailAsync("noran1@gmail.com");
+
+    if (user != null)
+    {
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+
+        var result = await userManager.ResetPasswordAsync(
+            user,
+            token,
+            "CampusOne@2026New"
+        );
+
+        if (!result.Succeeded)
+        {
+            throw new Exception(string.Join(", ",
+                result.Errors.Select(e => e.Description)));
+        }
+
+        Console.WriteLine("Password reset successfully!");
+    }
+    else
+    {
+        Console.WriteLine("User not found!");
+    }
+}
 
 app.Run();
