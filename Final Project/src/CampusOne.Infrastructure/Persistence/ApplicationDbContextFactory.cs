@@ -12,7 +12,7 @@ public class ApplicationDbContextFactory
             new DbContextOptionsBuilder<ApplicationDbContext>();
 
         optionsBuilder.UseSqlServer(
-            "Server=DESKTOP-DBN5ITK\\SQLEXPRESS;Database=CampusOne;Trusted_Connection=True;TrustServerCertificate=True;");
+            "Server=.\\SQLEXPRESS01;Database=CampusOne;Trusted_Connection=True;TrustServerCertificate=True;");
 
         return new ApplicationDbContext(optionsBuilder.Options);
     }

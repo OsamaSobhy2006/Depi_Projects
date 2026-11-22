@@ -1,5 +1,6 @@
 using CampusOne.Domain.Entities;
 using CampusOne.Domain.Entities.AI;
+using CampusOne.Domain.Entities.Emergency;
 using CampusOne.Domain.Entities.UniversityServices;
 using CampusOne.Domain.Entities.Chat;
 using CampusOne.Infrastructure.Identity;
@@ -30,6 +31,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<ServiceCategory> ServiceCategories => Set<ServiceCategory>();
     public DbSet<ServiceItem> ServiceItems => Set<ServiceItem>();
     public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
+
+    public DbSet<EmergencyIncident> EmergencyIncidents => Set<EmergencyIncident>();
+    public DbSet<EmergencyUpdateLog> EmergencyUpdateLogs => Set<EmergencyUpdateLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -286,10 +290,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             entity.HasIndex(s => new { s.StudyGroupId, s.IsLive });
         });
 
-       
-
         // University Services Configuration
-
         builder.Entity<ServiceCategory>(entity =>
         {
             entity.HasKey(c => c.Id);
@@ -387,5 +388,89 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             entity.HasIndex(r => new { r.StudentId, r.SubmittedAt });
         });
 
+        // Emergency / SOS Configuration
+        builder.Entity<EmergencyIncident>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.ReporterUserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(e => e.AssignedResponderId)
+                .HasMaxLength(450);
+
+            entity.Property(e => e.Category)
+                .HasConversion<string>()
+                .HasMaxLength(40)
+                .IsRequired();
+
+            entity.Property(e => e.Status)
+                .HasConversion<string>()
+                .HasMaxLength(40)
+                .IsRequired();
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(2000);
+
+            entity.Property(e => e.AiSuggestedCategory)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.AiStructuredSummary)
+                .HasMaxLength(2000);
+
+            entity.Property(e => e.LocationLabel)
+                .HasMaxLength(250);
+
+            entity.Property(e => e.ResolutionNotes)
+                .HasMaxLength(2000);
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(e => e.ReporterUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(e => e.AssignedResponderId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasMany(e => e.Updates)
+                .WithOne(u => u.Incident)
+                .HasForeignKey(u => u.IncidentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.Status, e.CreatedAt });
+            entity.HasIndex(e => e.ReporterUserId);
+        });
+
+        builder.Entity<EmergencyUpdateLog>(entity =>
+        {
+            entity.HasKey(u => u.Id);
+
+            entity.Property(u => u.ActorUserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(u => u.NewStatus)
+                .HasConversion<string>()
+                .HasMaxLength(40);
+
+            entity.Property(u => u.Message)
+                .HasMaxLength(2000);
+
+            entity.Property(u => u.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(u => u.ActorUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasIndex(u => new { u.IncidentId, u.CreatedAt });
+        });
     }
 }
