@@ -1,19 +1,21 @@
-﻿
-using CampusOne.Api.Hubs;
+﻿using CampusOne.Api.Hubs;
 using CampusOne.API;
 using CampusOne.API.Hubs;
 using CampusOne.Application.Interfaces;
 using CampusOne.Application.Interfaces.AI;
+using CampusOne.Application.Interfaces.Emergency;
 using CampusOne.Application.Interfaces.UniversityServices;
 using CampusOne.Application.Services;
 using CampusOne.Infrastructure.AI;
 using CampusOne.Infrastructure.Identity;
 using CampusOne.Infrastructure.Persistence;
 using CampusOne.Infrastructure.Persistence.Seeders;
+using CampusOne.Infrastructure.Repositories.Emergency;
 using CampusOne.Infrastructure.Repositories.UniversityServices;
 using CampusOne.Infrastructure.Services;
 using CampusOne.Services.AI;
 using CampusOne.Services.Chat;
+using CampusOne.Services.Emergency;
 using CampusOne.Services.UniversityServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -56,6 +58,10 @@ builder.Services.AddScoped<IAiConversationService, AiConversationService>();
 builder.Services.AddScoped<IProfilePictureStorage, LocalProfilePictureStorage>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IStudyGroupService, StudyGroupService>();
+
+builder.Services.AddScoped<IEmergencyRepository, EmergencyRepository>();
+builder.Services.AddScoped<IEmergencyTriageService, EmergencyTriageService>();
+builder.Services.AddScoped<IEmergencyService, EmergencyService>();
 
 // 2. Configure CORS
 builder.Services.AddCors(options =>
@@ -155,7 +161,8 @@ builder.Services
 
                 if (!string.IsNullOrEmpty(accessToken) &&
                     (path.StartsWithSegments("/hubs/chat") ||
-                     path.StartsWithSegments("/hubs/study-room")))
+                     path.StartsWithSegments("/hubs/study-room") ||
+                     path.StartsWithSegments("/hubs/emergency")))
                 {
                     context.Token = accessToken;
                 }
@@ -196,5 +203,6 @@ app.MapControllers();
 // 11. Map SignalR Hubs
 app.MapHub<ChatHub>("/hubs/chat");
 app.MapHub<StudyRoomHub>("/hubs/study-room");
+app.MapHub<EmergencyHub>("/hubs/emergency");
 
 app.Run();
