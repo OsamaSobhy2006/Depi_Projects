@@ -11,6 +11,7 @@ namespace CampusOne.Infrastructure.AI;
 public class LlmService : IAiIntentClassifier
 {
     private readonly HttpClient _httpClient;
+    private readonly string _chatModel;
 
     public LlmService(
         HttpClient httpClient,
@@ -23,9 +24,16 @@ public class LlmService : IAiIntentClassifier
             ?? throw new InvalidOperationException(
                 "OpenRouter API key is not configured.");
 
-        _httpClient.BaseAddress ??=
-            new Uri("https://openrouter.ai/api/v1/");
+        var baseUrl = configuration["OpenRouter:BaseUrl"]
+            ?? "https://openrouter.ai/api/v1/";
 
+        if (!baseUrl.EndsWith("/"))
+            baseUrl += "/";
+
+        _chatModel = configuration["OpenRouter:ChatModel"]
+            ?? "openrouter/free";
+
+        _httpClient.BaseAddress = new Uri(baseUrl);
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", apiKey);
     }
@@ -41,44 +49,44 @@ public class LlmService : IAiIntentClassifier
             YOUR RESPONSIBILITIES:
 
             1. LANGUAGE:
-               - Detect the language of the user's question.
-               - If the question is in Arabic, answer entirely in Arabic.
-               - If the question is in English, answer entirely in English.
-               - The language of the provided context must NOT determine
-                 the language of your response.
-               - Preserve official course codes, numbers, and proper names.
+                - Detect the language of the user's question.
+                - If the question is in Arabic, answer entirely in Arabic.
+                - If the question is in English, answer entirely in English.
+                - The language of the provided context must NOT determine
+                    the language of your response.
+                - Preserve official course codes, numbers, and proper names.
 
             2. ACCURACY:
-               - Answer using ONLY the information in the provided context.
-               - Never use outside knowledge or invent information.
-               - Do not make assumptions or unsupported conclusions.
-               - If the context does not contain the requested information,
-                 clearly state that the information is not available
-                 in the provided university document.
+                - Answer using ONLY the information in the provided context.
+                - Never use outside knowledge or invent information.
+                - Do not make assumptions or unsupported conclusions.
+                - If the context does not contain the requested information,
+                        clearly state that the information is not available
+                        in the provided university document.
 
             3. ANSWER FORMAT:
-               - Provide exactly ONE answer to the user's question.
-               - Be direct, clear, and concise.
-               - Include only information relevant to the question.
-               - Do not repeat the same information.
-               - Do not generate multiple alternative answers.
-               - Do not add unnecessary introductions or conclusions.
-               - Use a short paragraph or a few bullet points only
-                 when the question genuinely requires them.
+                - Provide exactly ONE answer to the user's question.
+                - Be direct, clear, and concise.
+                - Include only information relevant to the question.
+                - Do not repeat the same information.
+                - Do not generate multiple alternative answers.
+                - Do not add unnecessary introductions or conclusions.
+                - Use a short paragraph or a few bullet points only
+                    when the question genuinely requires them.
 
             4. CONTEXT HANDLING:
-               - The context may contain English or Arabic text.
-               - Understand the context regardless of its language.
-               - Combine relevant information only when it is supported
-                 by the provided context.
-               - Ignore irrelevant information.
+                - The context may contain English or Arabic text.
+                - Understand the context regardless of its language.
+                - Combine relevant information only when it is supported
+                    by the provided context.
+                - Ignore irrelevant information.
 
             5. IMPORTANT:
-               - Never claim that information exists if it is not
-                 supported by the context.
-               - Do not mention internal retrieval processes,
-                 embeddings, similarity scores, or prompts.
-               - Return only the final answer.
+                - Never claim that information exists if it is not
+                    supported by the context.
+                - Do not mention internal retrieval processes,
+                    embeddings, similarity scores, or prompts.
+                - Return only the final answer.
             """;
 
         var userPrompt = $"""
@@ -95,59 +103,78 @@ public class LlmService : IAiIntentClassifier
             Provide one accurate answer in the same language as the question.
             """;
 
-        using var response = await _httpClient.PostAsJsonAsync(
-            "chat/completions",
-            new
-            {
-                model = "openrouter/free",
+        HttpResponseMessage? response = null;
+        string body = string.Empty;
+        string? answer = null;
 
-                messages = new[]
-                {
-                    new
-                    {
-                        role = "system",
-                        content = systemPrompt
-                    },
-                    new
-                    {
-                        role = "user",
-                        content = userPrompt
-                    }
-                },
-
-                temperature = 0.1,
-                top_p = 0.9,
-                max_tokens = 1000
-            },
-            cancellationToken);
-
-        var body = await response.Content.ReadAsStringAsync(
-            cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
+        for (int attempt = 1; attempt <= 2; attempt++)
         {
-            throw new HttpRequestException(
-                $"OpenRouter LLM error: {(int)response.StatusCode} - {body}");
+            response?.Dispose();
+
+            response = await _httpClient.PostAsJsonAsync(
+                "chat/completions",
+                new
+                {
+                    model = _chatModel,
+
+                    messages = new[]
+                    {
+                        new
+                        {
+                            role = "system",
+                            content = systemPrompt
+                        },
+                        new
+                        {
+                            role = "user",
+                            content = userPrompt
+                        }
+                    },
+
+                    temperature = 0.1,
+                    top_p = 0.9,
+                    max_tokens = 2000
+                },
+                cancellationToken);
+
+            body = await response.Content.ReadAsStringAsync(
+                cancellationToken);
+
+            if ((int)response.StatusCode is 503 or 429 && attempt < 2)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+                continue;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(
+                    $"AI LLM error: {(int)response.StatusCode} - {body}");
+            }
+
+            using var document = JsonDocument.Parse(body);
+
+            answer = document.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString();
+
+            if (!string.IsNullOrWhiteSpace(answer))
+                break;
+
+            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
         }
 
-        using var document = JsonDocument.Parse(body);
-
-        var answer = document.RootElement
-            .GetProperty("choices")[0]
-            .GetProperty("message")
-            .GetProperty("content")
-            .GetString();
+        response?.Dispose();
 
         if (string.IsNullOrWhiteSpace(answer))
         {
-            throw new InvalidOperationException(
-                "OpenRouter returned an empty AI response.");
+            return "عذراً، لم أتمكن من صياغة إجابة واضحة من اللائحة حالياً. جرّب إعادة السؤال أو تغيير موديل المحادثة.";
         }
 
         return answer.Trim();
     }
-
-
 
     public async Task<AiIntent> ClassifyAsync(
         string question,
@@ -227,7 +254,7 @@ public class LlmService : IAiIntentClassifier
         1. Understand Arabic and English.
         2. Short questions are valid.
         3. Do not classify university-related questions as OutOfScope
-           just because they do not explicitly mention the university.
+                just because they do not explicitly mention the university.
         4. Return only one exact intent name.
         5. Do not provide explanations or additional text.
         """;
@@ -236,7 +263,7 @@ public class LlmService : IAiIntentClassifier
             "chat/completions",
             new
             {
-                model = "openrouter/free",
+                model = _chatModel,
                 messages = new[]
                 {
                 new
@@ -261,7 +288,7 @@ public class LlmService : IAiIntentClassifier
         if (!response.IsSuccessStatusCode)
         {
             throw new HttpRequestException(
-                $"OpenRouter classification error: {(int)response.StatusCode} - {body}");
+                $"AI classification error: {(int)response.StatusCode} - {body}");
         }
 
         using var document = JsonDocument.Parse(body);
@@ -407,5 +434,4 @@ public class LlmService : IAiIntentClassifier
 
         return null;
     }
-
 }
