@@ -32,7 +32,14 @@
 
   <ItemGroup>
     <Folder Include="App_Data\ProfilePictures\" />
+    <Folder Include="Data\" />
     <Folder Include="wwwroot\pdfs\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Data\embeddings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
