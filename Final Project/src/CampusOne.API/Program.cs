@@ -24,11 +24,13 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System;
 using System.Text;
+using CampusOne.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Register services
 builder.Services.AddControllers();
+builder.Services.AddScoped<CloudinaryImageService>();
 builder.Services.AddEndpointsApiExplorer();
 
 // University Services
@@ -174,6 +176,13 @@ builder.Services
 
 // 7. Build Application
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider
+        .GetRequiredService<ApplicationDbContext>();
+
+    await ProductCategorySeeder.SeedAsync(dbContext);
+}
 
 // 8. Configure Swagger
 if (app.Environment.IsDevelopment())

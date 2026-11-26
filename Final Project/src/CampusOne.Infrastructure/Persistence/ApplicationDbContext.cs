@@ -1,8 +1,10 @@
+
 using CampusOne.Domain.Entities;
 using CampusOne.Domain.Entities.AI;
 using CampusOne.Domain.Entities.Emergency;
 using CampusOne.Domain.Entities.UniversityServices;
 using CampusOne.Domain.Entities.Chat;
+using CampusOne.Domain.Entities.Sales;
 using CampusOne.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -19,11 +21,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
 
     public DbSet<Book> Books => Set<Book>();
     public DbSet<BorrowRequest> BorrowRequests => Set<BorrowRequest>();
+
     public DbSet<AiConversation> AiConversations => Set<AiConversation>();
     public DbSet<AiMessage> AiMessages => Set<AiMessage>();
+
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ConversationParticipant> ConversationParticipants => Set<ConversationParticipant>();
     public DbSet<Message> Messages => Set<Message>();
+
     public DbSet<StudyGroup> StudyGroups => Set<StudyGroup>();
     public DbSet<StudyGroupMember> StudyGroupMembers => Set<StudyGroupMember>();
     public DbSet<StudySession> StudySessions => Set<StudySession>();
@@ -32,8 +37,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<ServiceItem> ServiceItems => Set<ServiceItem>();
     public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
 
+    // Emergency DbSets
     public DbSet<EmergencyIncident> EmergencyIncidents => Set<EmergencyIncident>();
     public DbSet<EmergencyUpdateLog> EmergencyUpdateLogs => Set<EmergencyUpdateLog>();
+
+    // Sales DbSets
+    public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -136,6 +148,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
                 .IsRequired();
         });
 
+        // Chat Conversation Configuration
         builder.Entity<Conversation>(entity =>
         {
             entity.HasKey(c => c.Id);
@@ -144,6 +157,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             entity.HasIndex(c => c.UpdatedAt);
         });
 
+        // Chat Participant Configuration
         builder.Entity<ConversationParticipant>(entity =>
         {
             entity.HasKey(p => new
@@ -151,12 +165,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
                 p.ConversationId,
                 p.UserId
             });
+
             entity.Property(p => p.UserId).IsRequired();
 
             entity.HasOne(p => p.Conversation)
-               .WithMany(c => c.Participants)
-               .HasForeignKey(p => p.ConversationId)
-               .OnDelete(DeleteBehavior.Cascade);
+                .WithMany(c => c.Participants)
+                .HasForeignKey(p => p.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne<ApplicationUser>()
                 .WithMany()
@@ -166,6 +181,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             entity.HasIndex(p => p.UserId);
         });
 
+        // Chat Message Configuration
         builder.Entity<Message>(entity =>
         {
             entity.HasKey(m => m.Id);
@@ -471,6 +487,105 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
                 .OnDelete(DeleteBehavior.NoAction);
 
             entity.HasIndex(u => new { u.IncidentId, u.CreatedAt });
+        });
+
+        // Sales Configuration
+        builder.Entity<ProductCategory>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+
+            entity.Property(c => c.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(c => c.Description)
+                .HasMaxLength(1000);
+
+            entity.Property(c => c.Icon)
+                .HasMaxLength(100);
+
+            entity.HasIndex(c => c.Name)
+                .IsUnique();
+        });
+
+        builder.Entity<Product>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+
+            entity.Property(p => p.Name)
+                .IsRequired()
+                .HasMaxLength(150);
+
+            entity.Property(p => p.Description)
+                .IsRequired()
+                .HasMaxLength(2000);
+
+            entity.Property(p => p.Price)
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(p => p.ImageUrl)
+                .HasMaxLength(2048);
+
+            entity.Property(p => p.UserId)
+                .HasMaxLength(450);
+
+            entity.HasOne(p => p.Category)
+                .WithMany(c => c.Products)
+                .HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(p => p.CategoryId);
+            entity.HasIndex(p => p.UserId);
+        });
+
+        builder.Entity<Order>(entity =>
+        {
+            entity.HasKey(o => o.Id);
+
+            entity.Property(o => o.UserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(o => o.TotalAmount)
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(o => o.Status)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(o => o.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(o => o.Items)
+                .WithOne(i => i.Order)
+                .HasForeignKey(i => i.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(o => new { o.UserId, o.OrderDate });
+        });
+
+        builder.Entity<OrderItem>(entity =>
+        {
+            entity.HasKey(i => i.Id);
+
+            entity.Property(i => i.Quantity)
+                .IsRequired();
+
+            entity.Property(i => i.UnitPrice)
+                .HasColumnType("decimal(18,2)");
+
+            entity.HasOne(i => i.Product)
+                .WithMany()
+                .HasForeignKey(i => i.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
