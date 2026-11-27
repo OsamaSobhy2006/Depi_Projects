@@ -1,13 +1,16 @@
 ﻿using CampusOne.Api.Hubs;
 using CampusOne.API;
 using CampusOne.API.Hubs;
+using CampusOne.API.Services;
 using CampusOne.Application.Interfaces;
 using CampusOne.Application.Interfaces.AI;
 using CampusOne.Application.Interfaces.Emergency;
+using CampusOne.Application.Interfaces.LostAndFound;
 using CampusOne.Application.Interfaces.UniversityServices;
 using CampusOne.Application.Services;
 using CampusOne.Infrastructure.AI;
 using CampusOne.Infrastructure.Identity;
+using CampusOne.Infrastructure.LostAndFound;
 using CampusOne.Infrastructure.Persistence;
 using CampusOne.Infrastructure.Persistence.Seeders;
 using CampusOne.Infrastructure.Repositories.Emergency;
@@ -16,6 +19,7 @@ using CampusOne.Infrastructure.Services;
 using CampusOne.Services.AI;
 using CampusOne.Services.Chat;
 using CampusOne.Services.Emergency;
+using CampusOne.Services.LostAndFound;
 using CampusOne.Services.UniversityServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -24,12 +28,17 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System;
 using System.Text;
-using CampusOne.API.Services;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Register services
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
+
 builder.Services.AddScoped<CloudinaryImageService>();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -64,6 +73,8 @@ builder.Services.AddScoped<IStudyGroupService, StudyGroupService>();
 builder.Services.AddScoped<IEmergencyRepository, EmergencyRepository>();
 builder.Services.AddScoped<IEmergencyTriageService, EmergencyTriageService>();
 builder.Services.AddScoped<IEmergencyService, EmergencyService>();
+builder.Services.AddHttpClient<IImageComparisonService, ImageComparisonService>();
+builder.Services.AddScoped<ILostAndFoundService, LostAndFoundService>();
 
 // 2. Configure CORS
 builder.Services.AddCors(options =>

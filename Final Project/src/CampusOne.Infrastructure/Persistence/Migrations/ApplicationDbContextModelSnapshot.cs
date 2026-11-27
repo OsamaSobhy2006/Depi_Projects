@@ -350,6 +350,109 @@ namespace CampusOne.Infrastructure.Persistence.Migrations
                     b.ToTable("EmergencyUpdateLogs");
                 });
 
+            modelBuilder.Entity("CampusOne.Domain.Entities.LostAndFound.LostAndFoundClaim", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ClaimantUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("FoundItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("LostItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<double>("SimilarityScore")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("VerificationNote")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClaimantUserId");
+
+                    b.HasIndex("FoundItemId");
+
+                    b.HasIndex("LostItemId", "FoundItemId")
+                        .IsUnique();
+
+                    b.ToTable("LostAndFoundClaims");
+                });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.LostAndFound.LostAndFoundItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<DateTime>("IncidentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("ReporterUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReporterUserId");
+
+                    b.HasIndex("Type", "Status", "CreatedAt");
+
+                    b.ToTable("LostAndFoundItems");
+                });
+
             modelBuilder.Entity("CampusOne.Domain.Entities.Sales.Order", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1056,6 +1159,40 @@ namespace CampusOne.Infrastructure.Persistence.Migrations
                     b.Navigation("Incident");
                 });
 
+            modelBuilder.Entity("CampusOne.Domain.Entities.LostAndFound.LostAndFoundClaim", b =>
+                {
+                    b.HasOne("CampusOne.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ClaimantUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("CampusOne.Domain.Entities.LostAndFound.LostAndFoundItem", "FoundItem")
+                        .WithMany()
+                        .HasForeignKey("FoundItemId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("CampusOne.Domain.Entities.LostAndFound.LostAndFoundItem", "LostItem")
+                        .WithMany("Claims")
+                        .HasForeignKey("LostItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FoundItem");
+
+                    b.Navigation("LostItem");
+                });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.LostAndFound.LostAndFoundItem", b =>
+                {
+                    b.HasOne("CampusOne.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ReporterUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("CampusOne.Domain.Entities.Sales.Order", b =>
                 {
                     b.HasOne("CampusOne.Infrastructure.Identity.ApplicationUser", null)
@@ -1237,6 +1374,11 @@ namespace CampusOne.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("CampusOne.Domain.Entities.Emergency.EmergencyIncident", b =>
                 {
                     b.Navigation("Updates");
+                });
+
+            modelBuilder.Entity("CampusOne.Domain.Entities.LostAndFound.LostAndFoundItem", b =>
+                {
+                    b.Navigation("Claims");
                 });
 
             modelBuilder.Entity("CampusOne.Domain.Entities.Sales.Order", b =>

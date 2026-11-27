@@ -1,10 +1,10 @@
-
 using CampusOne.Domain.Entities;
 using CampusOne.Domain.Entities.AI;
-using CampusOne.Domain.Entities.Emergency;
-using CampusOne.Domain.Entities.UniversityServices;
 using CampusOne.Domain.Entities.Chat;
+using CampusOne.Domain.Entities.Emergency;
+using CampusOne.Domain.Entities.LostAndFound;
 using CampusOne.Domain.Entities.Sales;
+using CampusOne.Domain.Entities.UniversityServices;
 using CampusOne.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -46,6 +46,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<LostAndFoundItem> LostAndFoundItems => Set<LostAndFoundItem>();
+    public DbSet<LostAndFoundClaim> LostAndFoundClaims => Set<LostAndFoundClaim>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -586,6 +588,84 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
                 .WithMany()
                 .HasForeignKey(i => i.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<LostAndFoundItem>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.ReporterUserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(x => x.Title)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(x => x.Category)
+                .HasMaxLength(100);
+
+            entity.Property(x => x.Description)
+                .IsRequired()
+                .HasMaxLength(2000);
+
+            entity.Property(x => x.Location)
+                .HasMaxLength(250);
+
+            entity.Property(x => x.ImageUrl)
+                .IsRequired()
+                .HasMaxLength(2048);
+
+            entity.Property(x => x.Type)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.Property(x => x.Status)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(x => x.ReporterUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasIndex(x => new { x.Type, x.Status, x.CreatedAt });
+        });
+
+        builder.Entity<LostAndFoundClaim>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+
+            entity.Property(c => c.ClaimantUserId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            entity.Property(c => c.VerificationNote)
+                .HasMaxLength(2000);
+
+            entity.Property(c => c.Status)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.HasOne(c => c.LostItem)
+                .WithMany(i => i.Claims)
+                .HasForeignKey(c => c.LostItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(c => c.FoundItem)
+                .WithMany()
+                .HasForeignKey(c => c.FoundItemId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(c => c.ClaimantUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasIndex(c => new { c.LostItemId, c.FoundItemId }).IsUnique();
         });
     }
 }

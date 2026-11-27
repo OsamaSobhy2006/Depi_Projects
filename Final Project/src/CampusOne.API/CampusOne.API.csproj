@@ -35,6 +35,7 @@
     <Folder Include="App_Data\ProfilePictures\" />
     <Folder Include="Data\" />
     <Folder Include="wwwroot\pdfs\" />
+    <Folder Include="wwwroot\uploads\lost-and-found\" />
   </ItemGroup>
 
   <ItemGroup>
