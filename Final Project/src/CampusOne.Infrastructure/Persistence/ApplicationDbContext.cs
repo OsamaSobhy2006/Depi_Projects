@@ -48,6 +48,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<LostAndFoundItem> LostAndFoundItems => Set<LostAndFoundItem>();
     public DbSet<LostAndFoundClaim> LostAndFoundClaims => Set<LostAndFoundClaim>();
+    public DbSet<Announcement> Announcements => Set<Announcement>();
+
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -666,6 +668,17 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
                 .OnDelete(DeleteBehavior.NoAction);
 
             entity.HasIndex(c => new { c.LostItemId, c.FoundItemId }).IsUnique();
+        });
+        builder.Entity<Announcement>(b =>
+        {
+            b.ToTable("Announcements");
+            b.HasKey(a => a.Id);
+            b.Property(a => a.Title).IsRequired().HasMaxLength(200);
+            b.Property(a => a.Content).IsRequired().HasMaxLength(4000);
+            b.Property(a => a.Category).HasConversion<int>();
+            b.Property(a => a.CreatedByUserId).HasMaxLength(450);
+            b.HasIndex(a => new { a.IsPinned, a.PublishedAtUtc });
+            b.HasIndex(a => a.Category);
         });
     }
 }

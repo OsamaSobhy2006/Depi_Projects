@@ -16,6 +16,7 @@ using CampusOne.Infrastructure.Persistence.Seeders;
 using CampusOne.Infrastructure.Repositories.Emergency;
 using CampusOne.Infrastructure.Repositories.UniversityServices;
 using CampusOne.Infrastructure.Services;
+using CampusOne.Services;
 using CampusOne.Services.AI;
 using CampusOne.Services.Chat;
 using CampusOne.Services.Emergency;
@@ -75,6 +76,8 @@ builder.Services.AddScoped<IEmergencyTriageService, EmergencyTriageService>();
 builder.Services.AddScoped<IEmergencyService, EmergencyService>();
 builder.Services.AddHttpClient<IImageComparisonService, ImageComparisonService>();
 builder.Services.AddScoped<ILostAndFoundService, LostAndFoundService>();
+builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
+
 
 // 2. Configure CORS
 builder.Services.AddCors(options =>
