@@ -9,6 +9,7 @@ using CampusOne.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace CampusOne.Infrastructure.Persistence;
 
@@ -49,6 +50,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<LostAndFoundItem> LostAndFoundItems => Set<LostAndFoundItem>();
     public DbSet<LostAndFoundClaim> LostAndFoundClaims => Set<LostAndFoundClaim>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<Club> Clubs => Set<Club>();
+    public DbSet<ClubMembership> ClubMemberships => Set<ClubMembership>();
 
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -679,6 +682,32 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             b.Property(a => a.CreatedByUserId).HasMaxLength(450);
             b.HasIndex(a => new { a.IsPinned, a.PublishedAtUtc });
             b.HasIndex(a => a.Category);
+        });
+        builder.Entity<Club>(b =>
+        {
+            b.ToTable("Clubs");
+            b.HasKey(c => c.Id);
+            b.Property(c => c.Name).IsRequired().HasMaxLength(100);
+            b.Property(c => c.Description).IsRequired().HasMaxLength(2000);
+            b.Property(c => c.Category).HasConversion<int>();
+            b.Property(c => c.LogoUrl).HasMaxLength(500);
+            b.Property(c => c.MeetingInfo).HasMaxLength(200);
+            b.HasIndex(c => c.Name).IsUnique();
+            b.HasIndex(c => c.Category);
+
+            b.HasMany(c => c.Memberships)
+                .WithOne(m => m.Club)
+                .HasForeignKey(m => m.ClubId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<ClubMembership>(b =>
+        {
+            b.ToTable("ClubMemberships");
+            b.HasKey(m => m.Id);
+            b.Property(m => m.UserId).IsRequired().HasMaxLength(450);
+            b.HasIndex(m => new { m.ClubId, m.UserId }).IsUnique();
+            b.HasIndex(m => m.UserId);
         });
     }
 }

@@ -77,6 +77,7 @@ builder.Services.AddScoped<IEmergencyService, EmergencyService>();
 builder.Services.AddHttpClient<IImageComparisonService, ImageComparisonService>();
 builder.Services.AddScoped<ILostAndFoundService, LostAndFoundService>();
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
+builder.Services.AddScoped<IClubService, ClubService>();
 
 
 // 2. Configure CORS
