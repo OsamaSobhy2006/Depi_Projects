@@ -164,10 +164,11 @@ public class LostAndFoundService : ILostAndFoundService
             .Where(c => c.LostItemId == itemId || c.FoundItemId == itemId)
             .ToListAsync(cancellationToken);
 
-        var isParticipant = item.ReporterUserId == userId ||
-            relatedClaims.Any(c => c.ClaimantUserId == userId);
+        var isModeratorOrParticipant = string.IsNullOrWhiteSpace(userId)
+            || item.ReporterUserId == userId
+            || relatedClaims.Any(c => c.ClaimantUserId == userId);
 
-        if (!isParticipant)
+        if (!isModeratorOrParticipant)
             throw new UnauthorizedAccessException("You are not allowed to resolve this item.");
 
         var idsToResolve = new HashSet<Guid> { item.Id };
@@ -225,8 +226,9 @@ public class LostAndFoundService : ILostAndFoundService
             .FirstOrDefaultAsync(x => x.Id == itemId, cancellationToken)
             ?? throw new KeyNotFoundException("Lost and found item not found.");
 
-        if (item.ReporterUserId != userId)
-            throw new UnauthorizedAccessException("Only the report owner can delete this item.");
+        var isModeratorOrOwner = string.IsNullOrWhiteSpace(userId) || item.ReporterUserId == userId;
+        if (!isModeratorOrOwner)
+            throw new UnauthorizedAccessException("Only the report owner, Staff, or Admin can delete this item.");
 
         var claims = await _context.LostAndFoundClaims
             .Where(c => c.LostItemId == itemId || c.FoundItemId == itemId)

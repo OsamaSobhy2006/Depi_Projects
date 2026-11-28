@@ -1,10 +1,9 @@
-﻿using CampusOne.Application.DTOs.LostAndFound;
+﻿using System.Security.Claims;
+using CampusOne.Application.DTOs.LostAndFound;
 using CampusOne.Application.Interfaces.LostAndFound;
 using CampusOne.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace CampusOne.API.Controllers;
 
@@ -13,6 +12,7 @@ namespace CampusOne.API.Controllers;
 [Authorize]
 public class LostAndFoundController : ControllerBase
 {
+    private static readonly string[] ModeratorRoles = ["Admin", "Staff"];
     private readonly ILostAndFoundService _lostAndFoundService;
 
     public LostAndFoundController(ILostAndFoundService lostAndFoundService)
@@ -44,10 +44,7 @@ public class LostAndFoundController : ControllerBase
         [FromForm] CreateReportFormRequest form,
         CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("sub")
-            ?? string.Empty;
-
+        var userId = GetCurrentUserId();
         if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized();
 
@@ -84,13 +81,10 @@ public class LostAndFoundController : ControllerBase
 
     [HttpPost("claims")]
     public async Task<IActionResult> SubmitClaim(
-    [FromBody] SubmitClaimBodyRequest body,
-    CancellationToken cancellationToken)
+        [FromBody] SubmitClaimBodyRequest body,
+        CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("sub")
-            ?? string.Empty;
-
+        var userId = GetCurrentUserId();
         if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized();
 
@@ -116,8 +110,8 @@ public class LostAndFoundController : ControllerBase
 
     [HttpGet("reports")]
     public async Task<IActionResult> GetReports(
-    [FromQuery] LostAndFoundType? type,
-    CancellationToken cancellationToken)
+        [FromQuery] LostAndFoundType? type,
+        CancellationToken cancellationToken)
     {
         var items = await _lostAndFoundService.GetReportsAsync(type, cancellationToken);
         return Ok(items);
@@ -125,19 +119,18 @@ public class LostAndFoundController : ControllerBase
 
     [HttpPatch("reports/{itemId:guid}/resolve")]
     public async Task<IActionResult> ResolveItem(
-    Guid itemId,
-    CancellationToken cancellationToken)
+        Guid itemId,
+        CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("sub")
-            ?? string.Empty;
-
+        var userId = GetCurrentUserId();
         if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized();
 
+        var effectiveUserId = HasModeratorRole() ? string.Empty : userId;
+
         try
         {
-            await _lostAndFoundService.ResolveItemAsync(itemId, userId, cancellationToken);
+            await _lostAndFoundService.ResolveItemAsync(itemId, effectiveUserId, cancellationToken);
             return Ok(new { itemId, status = "Resolved" });
         }
         catch (KeyNotFoundException ex)
@@ -155,16 +148,15 @@ public class LostAndFoundController : ControllerBase
         Guid itemId,
         CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("sub")
-            ?? string.Empty;
-
+        var userId = GetCurrentUserId();
         if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized();
 
+        var effectiveUserId = HasModeratorRole() ? string.Empty : userId;
+
         try
         {
-            await _lostAndFoundService.DeleteReportAsync(itemId, userId, cancellationToken);
+            await _lostAndFoundService.DeleteReportAsync(itemId, effectiveUserId, cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
@@ -176,4 +168,15 @@ public class LostAndFoundController : ControllerBase
             return Forbid(ex.Message);
         }
     }
+
+    private string GetCurrentUserId() =>
+        User.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? User.FindFirstValue("sub")
+        ?? string.Empty;
+
+    private bool HasModeratorRole() =>
+        ModeratorRoles.Any(role =>
+            User.IsInRole(role)
+            || User.FindAll(ClaimTypes.Role).Any(c => string.Equals(c.Value, role, StringComparison.OrdinalIgnoreCase))
+            || User.FindAll("role").Any(c => string.Equals(c.Value, role, StringComparison.OrdinalIgnoreCase)));
 }
